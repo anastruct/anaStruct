@@ -223,8 +223,8 @@ def assemble_system_matrix(
     #
     # thus with appending numbers in the system matrix: column = row
 
-    for i in range(len(system.element_map)):
-        element = system.element_map[i + 1]
+    i, element in enumerate(system.element_map.values()):
+        # element = system.element_map[i + 1]
         element_matrix = element.stiffness_matrix
 
         # n1 and n2 are starting indexes of the rows and the columns for node 1 and node 2
