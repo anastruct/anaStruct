@@ -892,8 +892,8 @@ class Plotter:
         self.plot_structure(
             figsize, 1, scale=scale, offset=offset, gridplot=gridplot, axes_i=axes_i
         )
-        assert self.system.element_map[1].axial_force is not None
-        con = len(self.system.element_map[1].axial_force)
+        assert list(self.system.element_map.values())[0].axial_force is not None
+        con = len(list(self.system.element_map.values())[0].axial_force)
 
         if factor is None:
             max_force = max(
@@ -1003,8 +1003,8 @@ class Plotter:
         self.plot_structure(
             figsize, 1, scale=scale, offset=offset, gridplot=gridplot, axes_i=axes_i
         )
-        assert self.system.element_map[1].bending_moment is not None
-        con = len(self.system.element_map[1].bending_moment)
+        assert list(self.system.element_map.values())[0].bending_moment is not None
+        con = len(list(self.system.element_map.values())[0].bending_moment)
         if factor is None:
             # maximum moment determined by comparing the node's moments and the sagging moments.
             max_moment = max(
