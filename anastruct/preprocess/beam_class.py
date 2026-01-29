@@ -126,15 +126,15 @@ class Beam(ABC):
         """Generate node coordinates and populate self.nodes list.
 
         Must be implemented by subclasses. Should create Vertex objects
-        representing all node locations in the beam.
+        representing all node locations in the beam. Should also populate
+        self.node_ids dictionary mapping spanwise node indices to global node IDs.
         """
 
     @abstractmethod
     def define_supports(self) -> None:
         """Define support locations and types by populating self.support_definitions.
 
-        Must be implemented by subclasses. Should also populate
-        self.node_ids dictionary mapping spanwise node indices to global node IDs.
+        Must be implemented by subclasses.
         """
 
     def add_nodes(self) -> None:
@@ -254,6 +254,103 @@ class Beam(ABC):
                 rotation=rotation,
                 q_perp=q_perp,
             )
+
+    def apply_point_load_to_spans(
+        self,
+        Fx: Union[float, Sequence[float]] = 0.0,
+        Fy: Union[float, Sequence[float]] = 0.0,
+        rotation: Union[float, Sequence[float]] = 0.0,
+        absolute_location: Optional[float] = None,
+        relative_location: Optional[float] = None,
+        spans: Optional[Union[int, Sequence[int]]] = None,
+        tolerance: Optional[float] = None,
+    ) -> None:
+        """Apply point load to elements within one or more spans.
+
+        Args:
+            Fx (Union[float, Sequence[float]]): Horizontal load component (force units)
+            Fy (Union[float, Sequence[float]]): Vertical load component (force units)
+            rotation (Union[float, Sequence[float]]): Rotation angle in degrees
+            absolute_location (Optional[float]): Absolute location along the beam length (length units).
+                Either absolute_location or relative_location must be provided.
+            relative_location (Optional[float]): Relative location along the beam length
+                (0.0 = start of span, 1.0 = end of span). Either absolute_location or
+                relative_location must be provided.
+            spans (Optional[Union[int, Sequence[int]]]): Span(s) to apply the load to. If None,
+                applies to all spans.
+            tolerance (float): Tolerance for matching existing node locations (length units). Defaults to beam length * 1e-4.
+        """
+        if spans is None:
+            spans = list(self.element_ids.keys())
+        elif isinstance(spans, int):
+            spans = [spans]
+
+        if absolute_location is None and relative_location is None:
+            raise ValueError(
+                "Either absolute_location or relative_location must be provided."
+            )
+        if absolute_location is not None and relative_location is not None:
+            raise ValueError(
+                "Only one of absolute_location or relative_location may be provided."
+            )
+
+        if tolerance is None:
+            tolerance = self.length * 1e-4
+
+        for span in spans:
+            span_node_ids = self.node_ids[span]
+            span_start = self.nodes[span_node_ids[0]]
+            span_end = self.nodes[span_node_ids[-1]]
+            span_length = np.sqrt(
+                (span_end.x - span_start.x) ** 2 + (span_end.y - span_start.y) ** 2
+            )
+
+            if relative_location is not None:
+                # Check if location is within this span
+                if relative_location < 0 or relative_location > 1.0:
+                    continue
+                # Compute absolute location within the span
+                absolute_location = relative_location * span_length
+            assert absolute_location is not None
+            # Compute load location
+            load_x = span_start.x + self.dx * absolute_location
+            load_y = span_start.y + self.dy * absolute_location
+
+            # Determine if a node already exists at (or very near to) the load location
+            node_id = self.system.find_node_id(
+                vertex=Vertex(load_x, load_y), tolerance=tolerance
+            )
+
+            # If no existing node, insert a new node into the appropriate element
+            if node_id is None:
+                # Identify the element to insert the node into
+                elem_start = 0.0
+                for i, elem_id in enumerate(self.element_ids[span]):
+                    elem_start_v = self.system.element_map[elem_id].vertex_1
+                    elem_end_v = self.system.element_map[elem_id].vertex_2
+                    elem_length = np.sqrt(
+                        (elem_end_v.x - elem_start_v.x) ** 2
+                        + (elem_end_v.y - elem_start_v.y) ** 2
+                    )
+                    elem_end = elem_start + elem_length
+
+                    if elem_start <= absolute_location <= elem_end:
+                        # Insert node into this element
+                        result = self.system.insert_node(
+                            element_id=elem_id, location=Vertex(load_x, load_y)
+                        )
+
+                        # Update our internal node and element lists
+                        self.node_ids[span].insert(i + 1, result["new_node_id"])
+                        self.element_ids[span].remove(elem_id)
+                        self.element_ids[span].insert(i, result["new_element_id1"])
+                        self.element_ids[span].insert(i + 1, result["new_element_id2"])
+                        node_id = result["new_node_id"]
+                        break
+
+            # Apply point load at the identified or newly created node
+            assert node_id is not None
+            self.system.point_load(node_id=node_id, Fx=Fx, Fy=Fy, rotation=rotation)
 
     def validate(self) -> bool:
         """Validate truss geometry and connectivity.
