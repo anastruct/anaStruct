@@ -29,6 +29,7 @@ class SimpleBeam(Beam):
     def define_nodes(self) -> None:
         self.nodes.append(Vertex(0.0, 0.0))
         self.nodes.append(Vertex(self.dx * self.length, self.dy * self.length))
+        self.node_ids[0] = [0, 1]
 
     def define_supports(self) -> None:
         self.support_definitions[0] = "pinned"
@@ -64,6 +65,7 @@ class CantileverBeam(Beam):
     def define_nodes(self) -> None:
         self.nodes.append(Vertex(0.0, 0.0))
         self.nodes.append(Vertex(self.dx * self.length, self.dy * self.length))
+        self.node_ids[0] = [0, 1]
 
     def define_supports(self) -> None:
         self.support_definitions[1 if self.cantilever_side == "left" else 0] = "fixed"
@@ -153,7 +155,7 @@ class MultiSpanBeam(Beam):
     def define_nodes(self) -> None:
         current_length = 0.0
         self.nodes.append(Vertex(0.0, 0.0))
-        for span in self.span_lengths:
+        for i, span in enumerate(self.span_lengths):
             current_length += span
             self.nodes.append(
                 Vertex(
@@ -161,6 +163,7 @@ class MultiSpanBeam(Beam):
                     self.dy * current_length,
                 )
             )
+            self.node_ids[i] = [i, i + 1]
 
     def define_supports(self) -> None:
         first_support = 0 if self.cantilevers in [None, "right"] else 1
@@ -237,6 +240,85 @@ class FourSpanBeam(MultiSpanBeam):
         return "Four-Span Beam"
 
 
+class ProppedBeam(MultiSpanBeam):
+    """Propped beam with an interior simple span and a cantilever on one side."""
+
+    def __init__(
+        self,
+        interior_length: float,
+        cantilever_length: float,
+        cantilever_side: Literal["left", "right"] = "right",
+        angle: float = 0.0,
+        section: Optional[SectionProps] = None,
+    ) -> None:
+        if cantilever_side.lower() == "left":
+            span_lengths = [cantilever_length, interior_length]
+        elif cantilever_side.lower() == "right":
+            span_lengths = [interior_length, cantilever_length]
+        else:
+            raise ValueError(
+                "cantilever_side must be either 'left' or 'right', "
+                f"got '{cantilever_side}'"
+            )
+        super().__init__(
+            span_lengths=span_lengths,
+            cantilevers=cantilever_side,
+            angle=angle,
+            section=section,
+        )
+        self.cantilever_side = cantilever_side.lower()
+
+    @property
+    def type(self) -> str:
+        return "Propped Beam"
+
+
+class RightProppedBeam(ProppedBeam):
+    """Propped beam with an interior simple span and a cantilever on the right side."""
+
+    def __init__(
+        self,
+        interior_length: float,
+        cantilever_length: float,
+        angle: float = 0.0,
+        section: Optional[SectionProps] = None,
+    ) -> None:
+        super().__init__(
+            interior_length=interior_length,
+            cantilever_length=cantilever_length,
+            cantilever_side="right",
+            angle=angle,
+            section=section,
+        )
+
+    @property
+    def type(self) -> str:
+        return "Right Propped Beam"
+
+
+class LeftProppedBeam(ProppedBeam):
+    """Propped beam with an interior simple span and a cantilever on the left side."""
+
+    def __init__(
+        self,
+        interior_length: float,
+        cantilever_length: float,
+        angle: float = 0.0,
+        section: Optional[SectionProps] = None,
+    ) -> None:
+        super().__init__(
+            interior_length=interior_length,
+            cantilever_length=cantilever_length,
+            cantilever_side="left",
+            angle=angle,
+            section=section,
+        )
+
+    @property
+    def type(self) -> str:
+        return "Left Propped Beam"
+
+
 def create_beam(beam_type: str, **kwargs: Any) -> Beam:
     """Factory function to create beam instances by type name.
 
@@ -244,81 +326,61 @@ def create_beam(beam_type: str, **kwargs: Any) -> Beam:
     Type names are case-insensitive and can use underscores or hyphens as separators.
 
     Args:
-        truss_type (str): Name of the truss type. Supported types:
-            Flat trusses: "howe", "pratt", "warren"
-            Roof trusses: "king_post", "queen_post", "fink", "howe_roof", "pratt_roof",
-                "fan", "modified_queen_post", "double_fink", "double_howe",
-                "modified_fan", "attic"
-        **kwargs: Arguments to pass to the truss constructor
+        beam_type (str): The type of beam to create (e.g., "simple", "cantilever", "multi_span")
+        **kwargs: Arguments to pass to the beam constructor
 
     Returns:
-        Truss: An instance of the requested truss type
+        Beam: An instance of the requested beam type
 
     Raises:
-        ValueError: If truss_type is not recognized
+        ValueError: If beam_type is not recognized
 
     Examples:
-        >>> truss = create_truss("howe", width=20, height=2.5, unit_width=2.0)
-        >>> truss = create_truss("king-post", width=10, roof_pitch_deg=30)
+        >>> beam = create_beam("simple", length=10, section=section)
+        >>> beam = create_beam("cantilever", length=5, section=section)
     """
-    # Normalize the truss type name
-    normalized = truss_type.lower().replace("-", "_").replace(" ", "_")
+    # Normalize the beam type name
+    normalized = beam_type.lower().replace("-", "_").replace(" ", "_")
 
     # Map of normalized names to classes
-    truss_map = {
-        # Flat trusses
-        "howe": HoweFlatTruss,
-        "howe_flat": HoweFlatTruss,
-        "pratt": PrattFlatTruss,
-        "pratt_flat": PrattFlatTruss,
-        "warren": WarrenFlatTruss,
-        "warren_flat": WarrenFlatTruss,
-        # Roof trusses
-        "king_post": KingPostRoofTruss,
-        "kingpost": KingPostRoofTruss,
-        "queen_post": QueenPostRoofTruss,
-        "queenpost": QueenPostRoofTruss,
-        "fink": FinkRoofTruss,
-        "howe_roof": HoweRoofTruss,
-        "pratt_roof": PrattRoofTruss,
-        "fan": FanRoofTruss,
-        "modified_queen_post": ModifiedQueenPostRoofTruss,
-        "modified_queenpost": ModifiedQueenPostRoofTruss,
-        "double_fink": DoubleFinkRoofTruss,
-        "doublefink": DoubleFinkRoofTruss,
-        "double_howe": DoubleHoweRoofTruss,
-        "doublehowe": DoubleHoweRoofTruss,
-        "modified_fan": ModifiedFanRoofTruss,
-        "modifiedfan": ModifiedFanRoofTruss,
-        "attic": AtticRoofTruss,
-        "attic_roof": AtticRoofTruss,
+    beam_map = {
+        # Single-span beams
+        "simple": SimpleBeam,
+        "cantilever": CantileverBeam,
+        "right_cantilever": RightCantileverBeam,
+        "left_cantilever": LeftCantileverBeam,
+        # Multi-span beams
+        "multispan": MultiSpanBeam,
+        "multi_span": MultiSpanBeam,
+        "two_span": TwoSpanBeam,
+        "three_span": ThreeSpanBeam,
+        "four_span": FourSpanBeam,
+        "propped": ProppedBeam,
+        "right_propped": RightProppedBeam,
+        "left_propped": LeftProppedBeam,
     }
-
-    if normalized not in truss_map:
-        available = sorted(set(truss_map.keys()))
+    if normalized not in beam_map:
+        available = sorted(set(beam_map.keys()))
         raise ValueError(
-            f"Unknown truss type '{truss_type}'. Available types: {', '.join(available)}"
+            f"Unknown beam type '{beam_type}'. Available types: {', '.join(available)}"
         )
 
-    truss_class = truss_map[normalized]
-    assert issubclass(truss_class, Truss)
-    return truss_class(**kwargs)
+    beam_class = beam_map[normalized]
+    assert issubclass(beam_class, Beam)
+    return beam_class(**kwargs)
 
 
 __all__ = [
-    "HoweFlatTruss",
-    "PrattFlatTruss",
-    "WarrenFlatTruss",
-    "KingPostRoofTruss",
-    "QueenPostRoofTruss",
-    "FinkRoofTruss",
-    "HoweRoofTruss",
-    "PrattRoofTruss",
-    "FanRoofTruss",
-    "ModifiedQueenPostRoofTruss",
-    "DoubleFinkRoofTruss",
-    "DoubleHoweRoofTruss",
-    "ModifiedFanRoofTruss",
-    "AtticRoofTruss",
-    "create_truss",
+    "SimpleBeam",
+    "CantileverBeam",
+    "RightCantileverBeam",
+    "LeftCantileverBeam",
+    "MultiSpanBeam",
+    "TwoSpanBeam",
+    "ThreeSpanBeam",
+    "FourSpanBeam",
+    "ProppedBeam",
+    "RightProppedBeam",
+    "LeftProppedBeam",
+    "create_beam",
 ]
