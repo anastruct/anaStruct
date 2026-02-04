@@ -176,7 +176,7 @@ class Truss(ABC):
     def add_nodes(self) -> None:
         """Add all nodes from self.nodes to the SystemElements."""
         for i, vertex in enumerate(self.nodes):
-            add_node(self.system, point=vertex, node_id=i)
+            add_node(self.system, point=vertex, node_id=i + 1)
 
     def add_elements(self) -> None:
         """Create elements from connectivity definitions and add to SystemElements.
@@ -207,7 +207,7 @@ class Truss(ABC):
             for i, j in node_pairs:
                 element_ids.append(
                     self.system.add_element(
-                        location=(self.nodes[i], self.nodes[j]),
+                        location=(self.nodes[i - 1], self.nodes[j - 1]),
                         EA=section["EA"],
                         EI=section["EI"],
                         g=section["g"],
@@ -433,8 +433,8 @@ class Truss(ABC):
         Raises:
             ValueError: If validation fails with description of the issue
         """
-        # Check that all node IDs in connectivity are valid
-        max_node_id = len(self.nodes) - 1
+        # Check that all node IDs in connectivity are valid (1-based)
+        max_node_id = len(self.nodes)
 
         # Helper to validate node ID list
         def validate_node_ids(
@@ -443,44 +443,44 @@ class Truss(ABC):
             if isinstance(node_ids, dict):
                 for segment_name, ids in node_ids.items():
                     for node_id in ids:
-                        if node_id < 0 or node_id > max_node_id:
+                        if node_id < 1 or node_id > max_node_id:
                             raise ValueError(
                                 f"{name} segment '{segment_name}' references invalid node ID {node_id}. "
-                                f"Valid range: 0-{max_node_id}"
+                                f"Valid range: 1-{max_node_id}"
                             )
             else:
                 for node_id in node_ids:
-                    if node_id < 0 or node_id > max_node_id:
+                    if node_id < 1 or node_id > max_node_id:
                         raise ValueError(
                             f"{name} references invalid node ID {node_id}. "
-                            f"Valid range: 0-{max_node_id}"
+                            f"Valid range: 1-{max_node_id}"
                         )
 
         validate_node_ids(self.top_chord_node_ids, "top_chord_node_ids")
         validate_node_ids(self.bottom_chord_node_ids, "bottom_chord_node_ids")
 
         for i, (node_a, node_b) in enumerate(self.web_node_pairs):
-            if node_a < 0 or node_a > max_node_id:
+            if node_a < 1 or node_a > max_node_id:
                 raise ValueError(
                     f"web_node_pairs[{i}] references invalid node ID {node_a}. "
-                    f"Valid range: 0-{max_node_id}"
+                    f"Valid range: 1-{max_node_id}"
                 )
-            if node_b < 0 or node_b > max_node_id:
+            if node_b < 1 or node_b > max_node_id:
                 raise ValueError(
                     f"web_node_pairs[{i}] references invalid node ID {node_b}. "
-                    f"Valid range: 0-{max_node_id}"
+                    f"Valid range: 1-{max_node_id}"
                 )
 
         for i, (node_a, node_b) in enumerate(self.web_verticals_node_pairs):
-            if node_a < 0 or node_a > max_node_id:
+            if node_a < 1 or node_a > max_node_id:
                 raise ValueError(
                     f"web_verticals_node_pairs[{i}] references invalid node ID {node_a}. "
-                    f"Valid range: 0-{max_node_id}"
+                    f"Valid range: 1-{max_node_id}"
                 )
-            if node_b < 0 or node_b > max_node_id:
+            if node_b < 1 or node_b > max_node_id:
                 raise ValueError(
                     f"web_verticals_node_pairs[{i}] references invalid node ID {node_b}. "
-                    f"Valid range: 0-{max_node_id}"
+                    f"Valid range: 1-{max_node_id}"
                 )
 
         # Check for duplicate node locations (within tolerance)
@@ -500,8 +500,8 @@ class Truss(ABC):
         def check_element_length(
             node_a_id: int, node_b_id: int, element_type: str
         ) -> None:
-            node_a = self.nodes[node_a_id]
-            node_b = self.nodes[node_b_id]
+            node_a = self.nodes[node_a_id - 1]
+            node_b = self.nodes[node_b_id - 1]
             dx = node_b.x - node_a.x
             dy = node_b.y - node_a.y
             length = np.sqrt(dx**2 + dy**2)
@@ -675,7 +675,7 @@ class FlatTruss(Truss):
         """
         assert isinstance(self.bottom_chord_node_ids, list)
         assert isinstance(self.top_chord_node_ids, list)
-        bottom_left = 0
+        bottom_left = 1
         bottom_right = max(self.bottom_chord_node_ids)
         top_left = min(self.top_chord_node_ids)
         top_right = max(self.top_chord_node_ids)
@@ -784,7 +784,7 @@ class RoofTruss(Truss):
         """
         assert isinstance(self.bottom_chord_node_ids, list)
 
-        bottom_left = 0
+        bottom_left = 1
         bottom_right = max(self.bottom_chord_node_ids)
         self.support_definitions[bottom_left] = self._resolve_support_type(
             is_primary=True

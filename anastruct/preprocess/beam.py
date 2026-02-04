@@ -29,11 +29,11 @@ class SimpleBeam(Beam):
     def define_nodes(self) -> None:
         self.nodes.append(Vertex(0.0, 0.0))
         self.nodes.append(Vertex(self.dx * self.length, self.dy * self.length))
-        self.node_ids[0] = [0, 1]
+        self.node_ids[0] = [1, 2]
 
     def define_supports(self) -> None:
-        self.support_definitions[0] = "pinned"
-        self.support_definitions[1] = "roller"
+        self.support_definitions[1] = "pinned"
+        self.support_definitions[2] = "roller"
 
 
 class CantileverBeam(Beam):
@@ -70,10 +70,10 @@ class CantileverBeam(Beam):
     def define_nodes(self) -> None:
         self.nodes.append(Vertex(0.0, 0.0))
         self.nodes.append(Vertex(self.dx * self.length, self.dy * self.length))
-        self.node_ids[0] = [0, 1]
+        self.node_ids[0] = [1, 2]
 
     def define_supports(self) -> None:
-        self.support_definitions[1 if self.cantilever_side == "left" else 0] = "fixed"
+        self.support_definitions[2 if self.cantilever_side == "left" else 1] = "fixed"
 
 
 class RightCantileverBeam(CantileverBeam):
@@ -169,14 +169,14 @@ class MultiSpanBeam(Beam):
                     self.dy * current_length,
                 )
             )
-            self.node_ids[i] = [i, i + 1]
+            self.node_ids[i] = [i + 1, i + 2]
 
     def define_supports(self) -> None:
-        first_support = 0 if self.cantilevers in [None, "right"] else 1
+        first_support = 1 if self.cantilevers in [None, "right"] else 2
         last_support = (
-            len(self.span_lengths)
+            len(self.span_lengths) + 1
             if self.cantilevers in [None, "left"]
-            else len(self.span_lengths) - 1
+            else len(self.span_lengths)
         )
         self.support_definitions[first_support] = "pinned"
         for i in range(first_support + 1, last_support + 1):

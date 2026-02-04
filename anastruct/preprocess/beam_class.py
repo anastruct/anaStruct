@@ -148,7 +148,7 @@ class Beam(ABC):
     def add_nodes(self) -> None:
         """Add all nodes from self.nodes to the SystemElements."""
         for i, vertex in enumerate(self.nodes):
-            add_node(self.system, point=vertex, node_id=i)
+            add_node(self.system, point=vertex, node_id=i + 1)
 
     def add_elements(self) -> None:
         """Create elements from connectivity definitions and add to SystemElements.
@@ -173,7 +173,7 @@ class Beam(ABC):
             for i, j in node_pairs:
                 element_ids.append(
                     self.system.add_element(
-                        location=(self.nodes[i], self.nodes[j]),
+                        location=(self.nodes[i - 1], self.nodes[j - 1]),
                         EA=section["EA"],
                         EI=section["EI"],
                         g=section["g"],
@@ -305,8 +305,8 @@ class Beam(ABC):
 
         for span in spans:
             span_node_ids = self.node_ids[span]
-            span_start = self.nodes[span_node_ids[0]]
-            span_end = self.nodes[span_node_ids[-1]]
+            span_start = self.nodes[span_node_ids[0] - 1]
+            span_end = self.nodes[span_node_ids[-1] - 1]
             span_length = np.sqrt(
                 (span_end.x - span_start.x) ** 2 + (span_end.y - span_start.y) ** 2
             )
@@ -376,15 +376,15 @@ class Beam(ABC):
             ValueError: If validation fails with description of the issue
         """
         # Check that all node IDs in connectivity are valid
-        max_node_id = len(self.nodes) - 1
+        max_node_id = len(self.nodes)
 
         # Validate node ID list
         for span, span_node_ids in self.node_ids.items():
             for node_id in span_node_ids:
-                if node_id < 0 or node_id > max_node_id:
+                if node_id < 1 or node_id > max_node_id:
                     raise ValueError(
                         f"Span number '{span}' references invalid node ID {node_id}. "
-                        f"Valid range: 0-{max_node_id}"
+                        f"Valid range: 1-{max_node_id}"
                     )
 
         # Check for duplicate node locations (within tolerance)
@@ -404,8 +404,8 @@ class Beam(ABC):
         def check_element_length(
             node_a_id: int, node_b_id: int, element_type: str
         ) -> None:
-            node_a = self.nodes[node_a_id]
-            node_b = self.nodes[node_b_id]
+            node_a = self.nodes[node_a_id - 1]
+            node_b = self.nodes[node_b_id - 1]
             dx = node_b.x - node_a.x
             dy = node_b.y - node_a.y
             length = np.sqrt(dx**2 + dy**2)
