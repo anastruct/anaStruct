@@ -184,12 +184,13 @@ def describe_roof_truss_types():
             # Get the center vertical connection
             center_vertical = truss.web_verticals_node_pairs[0]
 
-            # Node 1 is center bottom, node 4 is peak
-            assert center_vertical == (1, 4)
+            # Node 2 is center bottom, node 5 is peak (1-based IDs)
+            assert center_vertical == (2, 5)
 
             # Verify these nodes are actually center bottom and peak
-            center_bottom = truss.nodes[1]
-            peak = truss.nodes[4]
+            # Node IDs are 1-based, so we access nodes list with index-1
+            center_bottom = truss.nodes[1]  # Node ID 2 at index 1
+            peak = truss.nodes[4]  # Node ID 5 at index 4
 
             assert center_bottom.x == approx(truss.width / 2)
             assert center_bottom.y == approx(0)
@@ -486,10 +487,11 @@ def describe_validate_method():
     def it_catches_duplicate_nodes():
         truss = HoweFlatTruss(width=20, height=2.5, unit_width=2.0)
 
-        # Add duplicate node at same location as node 0
+        # Add duplicate node at same location as node ID 1 (index 0)
         original = truss.nodes[0]
         truss.nodes.append(Vertex(original.x, original.y))
-        truss.web_node_pairs.append((0, len(truss.nodes) - 1))
+        # Node IDs are 1-based, so new node ID is len(truss.nodes)
+        truss.web_node_pairs.append((1, len(truss.nodes)))
 
         with raises(ValueError, match="Duplicate nodes"):
             truss.validate()
@@ -667,3 +669,84 @@ def describe_edge_cases():
         # Should not affect the other
         assert len(truss1.nodes) != len(truss2.nodes)
         assert truss2.validate()
+
+
+def describe_solve_tests():
+    """Solve tests - verify trusses can be solved and produce valid reactions."""
+
+    def describe_king_post_roof_truss_solve():
+        def it_solves_with_top_chord_load():
+            truss = KingPostRoofTruss(width=10, roof_pitch_deg=30)
+
+            # Apply distributed load to top chord
+            truss.apply_q_load_to_top_chord(q=-5, direction="y")
+
+            # Solve the system
+            truss.system.solve()
+
+            # Get support node IDs (1-based)
+            support_node_ids = list(truss.support_definitions.keys())
+            assert len(support_node_ids) == 2
+
+            # Check that reactions are non-zero at support nodes
+            for node_id in support_node_ids:
+                reaction = truss.system.get_node_results_system(node_id=node_id)["Fy"]
+                assert abs(reaction) > 0, f"Node {node_id} should have non-zero reaction"
+
+            # Verify total vertical reaction equals applied load
+            total_reaction = sum(
+                truss.system.get_node_results_system(node_id=node_id)["Fy"]
+                for node_id in support_node_ids
+            )
+
+            # Applied load = q * length of top chord
+            # For king post, top chord has 2 segments from ends to peak
+            top_chord_length = 0
+            top_chord_el_ids = truss.get_element_ids_of_chord("top")
+            for el_id in top_chord_el_ids:
+                element = truss.system.element_map[el_id]
+                top_chord_length += element.l
+
+            expected_total_load = -5 * top_chord_length
+
+            assert total_reaction == approx(
+                expected_total_load, abs=0.1
+            ), "Total reactions should equal total applied load"
+
+    def describe_howe_flat_truss_solve():
+        def it_solves_with_bottom_chord_load():
+            truss = HoweFlatTruss(width=20, height=2.5, unit_width=2.0)
+
+            # Apply distributed load to bottom chord
+            truss.apply_q_load_to_bottom_chord(q=-10, direction="y")
+
+            # Solve the system
+            truss.system.solve()
+
+            # Get support node IDs (1-based)
+            support_node_ids = list(truss.support_definitions.keys())
+            assert len(support_node_ids) == 2
+
+            # Check that reactions are non-zero at support nodes
+            for node_id in support_node_ids:
+                reaction = truss.system.get_node_results_system(node_id=node_id)["Fy"]
+                assert abs(reaction) > 0, f"Node {node_id} should have non-zero reaction"
+
+            # Verify total vertical reaction equals applied load
+            total_reaction = sum(
+                truss.system.get_node_results_system(node_id=node_id)["Fy"]
+                for node_id in support_node_ids
+            )
+
+            # Applied load = q * length of bottom chord
+            bottom_chord_length = 0
+            bottom_chord_el_ids = truss.get_element_ids_of_chord("bottom")
+            for el_id in bottom_chord_el_ids:
+                element = truss.system.element_map[el_id]
+                bottom_chord_length += element.l
+
+            expected_total_load = -10 * bottom_chord_length
+
+            assert total_reaction == approx(
+                expected_total_load, abs=0.1
+            ), "Total reactions should equal total applied load"
