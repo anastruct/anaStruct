@@ -862,10 +862,13 @@ class ContinuousBeamAnalyzerPro(ctk.CTk):
                 Paragraph("Structure Model (Applied & Factored Loads)", h2_style)
             )
             struct_fig = self.ss.show_structure(show=False)
+            self.scale_support_symbols(struct_fig)
             self._rescale_graph_labels(struct_fig, "structure")
             self.add_dimensions(struct_fig)
+            struct_fig.set_size_inches(10, 3.5)
+            struct_fig.tight_layout(pad=0.8)
             boost_fonts(struct_fig)
-            elements.append(fig_to_image(struct_fig, 1.0))  # structure: no symbol scaling
+            elements.append(fig_to_image(struct_fig, 1.0))
             elements.append(Spacer(1, 10))
 
             # 4. Geometry Table
@@ -1058,6 +1061,8 @@ class ContinuousBeamAnalyzerPro(ctk.CTk):
             self.scale_support_symbols(react_fig)
             self._rescale_graph_labels(react_fig, "reaction")
             self.add_dimensions(react_fig)
+            react_fig.set_size_inches(10, 3.0)
+            react_fig.tight_layout(pad=0.8)
             boost_fonts(react_fig)
             elements.append(fig_to_image(react_fig, 0.9))
             elements.append(Spacer(1, 10))
@@ -1475,6 +1480,14 @@ class ContinuousBeamAnalyzerPro(ctk.CTk):
                     finite = verts[np.isfinite(verts)]
                     if len(finite) > 0:
                         y_vals.extend(finite.tolist())
+            except Exception:
+                pass
+        # Include text annotation y-positions so labels never clip outside axes
+        for text in ax.texts:
+            try:
+                _, ty = text.get_position()
+                if np.isfinite(ty):
+                    y_vals.append(float(ty))
             except Exception:
                 pass
 
