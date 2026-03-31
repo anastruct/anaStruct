@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Continuous Beam Analyzer PRO",
+      "runtimeExecutable": "D:\\anaStruct\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["continuous_beam_gui.py"],
+      "port": 0
+    },
+    {
+      "name": "Run Tests (pytest)",
+      "runtimeExecutable": "D:\\anaStruct\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "pytest", "tests/", "-v"],
+      "port": 0
+    },
+    {
+      "name": "Build Docs (Sphinx)",
+      "runtimeExecutable": "D:\\anaStruct\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-msphinx", "doc/", "doc/_build/html"],
+      "port": 0
+    },
+    {
+      "name": "Build Cython Extensions",
+      "runtimeExecutable": "D:\\anaStruct\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["build_cython_ext.py"],
+      "port": 0
+    }
+  ]
+}
