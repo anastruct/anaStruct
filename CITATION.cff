@@ -10,4 +10,4 @@ version: 1.0.0
 doi: 10.5281/zenodo.1234
 date-released: 2016-08-08
 repository-code: "https://github.com/ritchie46/anaStruct"
-url: "https://anastruct.readthedocs.io/"
+url: "https://anastruct-docs.readthedocs.io/"

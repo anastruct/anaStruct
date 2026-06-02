@@ -1,6 +1,6 @@
 # anaStruct 2D Frames and Trusses
 [![Python tests](https://github.com/ritchie46/anaStruct/actions/workflows/test.yaml/badge.svg)](https://github.com/ritchie46/anaStruct/actions/workflows/test.yaml)
-[![Documentation Status](https://readthedocs.org/projects/anastruct/badge/?version=latest)](http://anastruct.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/anastruct-docs/badge/?version=latest)](http://anastructd-docs.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Version](https://img.shields.io/pypi/v/anastruct)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/anastruct)
 ![Latest Release](https://img.shields.io/github/release-date/ritchie46/anaStruct)
@@ -23,7 +23,7 @@ $ pip install anastruct
 
 ## Read the docs!
 
-[Documentation](http://anastruct.readthedocs.io)
+[Documentation](http://anastruct-docs.readthedocs.io)
 
 ## Questions
 
