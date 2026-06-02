@@ -32,7 +32,7 @@ classifiers = [
 readme = "README.md"
 homepage = "https://github.com/ritchie46/anaStruct"
 repository = "https://github.com/ritchie46/anaStruct"
-documentation = "http://anastruct.readthedocs.io"
+documentation = "http://anastruct-docs.readthedocs.io"
 packages = [{ include = "anastruct" }]
 include = ["py.typed", "*.pyx"]
 
