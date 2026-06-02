@@ -2,8 +2,8 @@ from typing import Any, Literal, Optional
 
 import numpy as np
 
+from anastruct._types import SectionProps
 from anastruct.preprocess.truss_class import FlatTruss, RoofTruss, Truss
-from anastruct.types import SectionProps
 from anastruct.vertex import Vertex
 
 
@@ -62,9 +62,7 @@ class HoweFlatTruss(FlatTruss):
         if self.end_type == "triangle_up":
             # special case: end diagonal slopes in the opposite direction
             self.web_node_pairs.append((1, n_bottom_nodes + 1))
-            self.web_node_pairs.append(
-                (n_bottom_nodes, n_bottom_nodes + n_top_nodes)
-            )
+            self.web_node_pairs.append((n_bottom_nodes, n_bottom_nodes + n_top_nodes))
             start_top = 2
             end_top = -3
         elif self.end_type == "flat":
@@ -156,9 +154,7 @@ class PrattFlatTruss(FlatTruss):
         if self.end_type == "triangle_down":
             # special case: end diagonal slopes in the opposite direction
             self.web_node_pairs.append((n_bottom_nodes + 1, 1))
-            self.web_node_pairs.append(
-                (n_bottom_nodes + n_top_nodes, n_bottom_nodes)
-            )
+            self.web_node_pairs.append((n_bottom_nodes + n_top_nodes, n_bottom_nodes))
             start_bot = 2
             end_bot = -3
         elif self.end_type == "flat":

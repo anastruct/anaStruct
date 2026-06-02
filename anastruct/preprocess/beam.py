@@ -2,8 +2,8 @@ from typing import Any, Literal, Optional
 
 import numpy as np
 
+from anastruct._types import SectionProps
 from anastruct.preprocess.beam_class import Beam
-from anastruct.types import SectionProps
 from anastruct.vertex import Vertex
 
 

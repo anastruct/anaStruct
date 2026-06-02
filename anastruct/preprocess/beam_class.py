@@ -3,9 +3,9 @@ from typing import Iterable, Literal, Optional, Sequence, Union
 
 import numpy as np
 
+from anastruct._types import LoadDirection, SectionProps
 from anastruct.fem.system import SystemElements
 from anastruct.fem.system_components.util import add_node
-from anastruct.types import LoadDirection, SectionProps
 from anastruct.vertex import Vertex
 
 DEFAULT_BEAM_SECTION: SectionProps = {

@@ -30,8 +30,7 @@ from anastruct.vertex import Vertex, vertex_range
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-    from anastruct.fem.node import Node
-    from anastruct.types import (
+    from anastruct._types import (
         AxisNumber,
         Dimension,
         LoadDirection,
@@ -40,6 +39,7 @@ if TYPE_CHECKING:
         SupportDirection,
         VertexLike,
     )
+    from anastruct.fem.node import Node
 
 
 class SystemElements:

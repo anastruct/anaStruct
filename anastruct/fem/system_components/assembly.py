@@ -6,9 +6,9 @@ import numpy as np
 from anastruct.fem.elements import det_axial, det_moment, det_shear
 
 if TYPE_CHECKING:
+    from anastruct._types import AxisNumber
     from anastruct.fem.elements import Element
     from anastruct.fem.system import SystemElements
-    from anastruct.types import AxisNumber
 
 
 def set_force_vector(
