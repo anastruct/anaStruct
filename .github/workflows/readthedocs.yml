@@ -4,7 +4,13 @@ on:
   release:
     types: [published, edited]
   push:
-    branches: [docs*]
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - '*.rst'
+      - '*.md'
+      - 'readthedocs.yml'
+      - '.readthedocs.yaml'
 
 jobs:
   trigger-rtd:
