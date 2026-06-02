@@ -266,6 +266,51 @@ def describe_end_to_end_tests():
             assert SS_20.element_map[4].q_load == approx((1.6, 2.205258))
             assert SS_20.element_map[5].q_load == approx((2.205258, 3))
 
+    def context_insert_node_then_solve():
+        # insert_node deletes the split element and appends two new ones, leaving
+        # element_map with non-contiguous ids. The structure must still assemble
+        # and solve, giving the same result as the equivalent model built with
+        # that node defined up front (#308).
+        inserted = SystemElements(EA=15000, EI=5000, mesh=101)
+        inserted.add_element(location=[[0, 0], [10, 4]])
+        inserted.add_element(location=[[10, 4], [10, 0]])
+        inserted.add_support_hinged(node_id=1)
+        inserted.add_support_hinged(node_id=3)
+        inserted.q_load(q=5, element_id=1, direction="element")
+        inserted.point_load(node_id=2, Fx=4, Fy=0)
+        inserted.insert_node(element_id=2, factor=0.25)
+        inserted.point_load(node_id=4, Fx=8, Fy=0)
+        inserted.solve()
+
+        unsplit = SystemElements(EA=15000, EI=5000, mesh=101)
+        unsplit.add_element(location=[[0, 0], [10, 4]])
+        unsplit.add_element(location=[[10, 4], [10, 3]])
+        unsplit.add_element(location=[[10, 3], [10, 0]])
+        unsplit.add_support_hinged(node_id=1)
+        unsplit.add_support_hinged(node_id=4)
+        unsplit.q_load(q=5, element_id=1, direction="element")
+        unsplit.point_load(node_id=2, Fx=4, Fy=0)
+        unsplit.point_load(node_id=3, Fx=8, Fy=0)
+        unsplit.solve()
+
+        # the element ids are non-contiguous after the split
+        assert list(inserted.element_map.keys()) == [1, 3, 4]
+
+        def displacements_by_coordinate(system):
+            return {
+                (round(node.vertex.x, 6), round(node.vertex.y, 6)): (
+                    system.get_node_displacements(node_id)["ux"],
+                    system.get_node_displacements(node_id)["uy"],
+                )
+                for node_id, node in system.node_map.items()
+            }
+
+        inserted_disp = displacements_by_coordinate(inserted)
+        unsplit_disp = displacements_by_coordinate(unsplit)
+        assert set(inserted_disp) == set(unsplit_disp)
+        for coordinate, displacement in inserted_disp.items():
+            assert displacement == approx(unsplit_disp[coordinate])
+
     def context_find_node_id():
         # find_node_id() function using Example 8
 
