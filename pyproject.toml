@@ -9,7 +9,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "anastruct"
-version = "1.6.2"
+version = "1.7.0"
 authors = ["Ritchie Vink <ritchie46@gmail.com>"]
 maintainers = ["Brooks Smith <smith120bh@gmail.com>"]
 description = "Finite element analysis of 2D structures"
