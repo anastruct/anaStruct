@@ -252,41 +252,46 @@ class WarrenFlatTruss(FlatTruss):
         self.end_width = (width - self.n_units * unit_width) / 2 + (unit_width / 2)
 
     def define_nodes(self) -> None:
+        # Warren's __init__ overrides self.end_width after super().__init__ returns, but
+        # define_nodes is called inside that super().__init__.  At this point self.end_width
+        # still holds the FlatTruss value = (width - n_units*unit_width)/2, which equals the
+        # half-unit inset used for the *offset* chord endpoints (t_x0).  The interior nodes of
+        # the *corner* chord sit an additional half unit further in, so their base is
+        # self.end_width + unit_width/2.
+        t_x0   = self.end_width                         # inset for offset-chord endpoints
+        b_base = self.end_width + self.unit_width / 2   # base x for corner-chord interior nodes
+
         # Bottom chord nodes
         if self.end_type == "triangle_down":
+            # Corners at x=0 and x=width; n_units interior nodes
             self.nodes.append(Vertex(0.0, 0.0))
-        else:
-            self.nodes.append(Vertex(self.end_width - self.unit_width / 2, 0.0))
-        for i in range(int(self.n_units) + 1):
-            x = self.end_width + i * self.unit_width
-            self.nodes.append(Vertex(x, 0.0))
-        if self.end_type == "triangle_down":
+            for i in range(int(self.n_units)):
+                self.nodes.append(Vertex(b_base + i * self.unit_width, 0.0))
             self.nodes.append(Vertex(self.width, 0.0))
-        else:
-            self.nodes.append(
-                Vertex(self.width - (self.end_width - self.unit_width / 2), 0.0)
-            )
+        else:  # triangle_up — offset endpoints; n_units-1 interior nodes
+            self.nodes.append(Vertex(t_x0, 0.0))
+            for i in range(1, int(self.n_units)):
+                self.nodes.append(Vertex(t_x0 + i * self.unit_width, 0.0))
+            self.nodes.append(Vertex(self.width - t_x0, 0.0))
 
         # Top chord nodes
         if self.end_type == "triangle_up":
-            self.nodes.append(Vertex(0, self.height))
-        else:
-            self.nodes.append(Vertex(self.end_width - self.unit_width / 2, self.height))
-        for i in range(int(self.n_units) + 1):
-            x = self.end_width + i * self.unit_width
-            self.nodes.append(Vertex(x, self.height))
-        if self.end_type == "triangle_up":
+            # Corners at x=0 and x=width; n_units interior nodes
+            self.nodes.append(Vertex(0.0, self.height))
+            for i in range(int(self.n_units)):
+                self.nodes.append(Vertex(b_base + i * self.unit_width, self.height))
             self.nodes.append(Vertex(self.width, self.height))
-        else:
-            self.nodes.append(
-                Vertex(self.width - (self.end_width - self.unit_width / 2), self.height)
-            )
+        else:  # triangle_down — offset endpoints; n_units-1 interior nodes
+            self.nodes.append(Vertex(t_x0, self.height))
+            for i in range(1, int(self.n_units)):
+                self.nodes.append(Vertex(t_x0 + i * self.unit_width, self.height))
+            self.nodes.append(Vertex(self.width - t_x0, self.height))
 
     def define_connectivity(self) -> None:
-        n_bottom_nodes = int(self.n_units) + (
-            1 if self.end_type == "triangle_down" else 0
-        )
-        n_top_nodes = int(self.n_units) + (1 if self.end_type == "triangle_up" else 0)
+        # triangle_down: bottom has corner endpoints → n_units+2 nodes; top is offset → n_units+1
+        # triangle_up:   top has corner endpoints   → n_units+2 nodes; bottom is offset → n_units+1
+        n_bottom_nodes = int(self.n_units) + (2 if self.end_type == "triangle_down" else 1)
+        n_top_nodes = int(self.n_units) + (2 if self.end_type == "triangle_up" else 1)
 
         # Bottom chord connectivity
         self.bottom_chord_node_ids = list(range(1, n_bottom_nodes + 1))
