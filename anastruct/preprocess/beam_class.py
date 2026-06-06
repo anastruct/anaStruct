@@ -1,3 +1,4 @@
+import warnings
 from abc import ABC, abstractmethod
 from typing import Iterable, Literal, Optional, Sequence, Union, cast
 
@@ -94,9 +95,10 @@ class Beam(ABC):
             self.span_lengths = [length]
 
         if angle != 0.0 and -2 * np.pi <= angle <= 2 * np.pi:
-            print(
+            warnings.warn(
                 f"WARNING: A very small angle was provided ({angle}). "
-                f"Please ensure input units are degrees, not radians."
+                f"Please ensure input units are degrees, not radians.",
+                stacklevel=2,
             )
         if angle < 0 or angle >= 360:
             angle = angle % 360
