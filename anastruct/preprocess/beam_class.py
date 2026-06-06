@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Literal, Optional, Sequence, Union
+from typing import Iterable, Literal, Optional, Sequence, Union, cast
 
 import numpy as np
 
@@ -106,6 +106,14 @@ class Beam(ABC):
 
         self.angle = angle
         self.section = section or DEFAULT_BEAM_SECTION
+
+        def ensure_valid_section(section: SectionProps) -> SectionProps:
+            """Ensure section has all required properties, filling in defaults."""
+            valid_section = dict(DEFAULT_BEAM_SECTION)  # Start with defaults
+            valid_section.update(section)  # Override with provided values
+            return cast(SectionProps, valid_section)
+
+        self.section = ensure_valid_section(self.section)
 
         self.dx = np.cos(self.angle * np.pi / 180)
         self.dy = np.sin(self.angle * np.pi / 180)

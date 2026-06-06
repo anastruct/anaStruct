@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Literal, Optional, Sequence, Union, overload
+from typing import Iterable, Literal, Optional, Sequence, Union, cast, overload
 
 import numpy as np
 
@@ -124,6 +124,17 @@ class Truss(ABC):
         self.top_chord_continuous = top_chord_continuous
         self.bottom_chord_continuous = bottom_chord_continuous
         self.supports_type = supports_type
+
+        def ensure_valid_section(section: SectionProps) -> SectionProps:
+            """Ensure section has all required properties, filling in defaults."""
+            valid_section = dict(DEFAULT_TRUSS_SECTION)  # Start with defaults
+            valid_section.update(section)  # Override with provided values
+            return cast(SectionProps, valid_section)
+
+        self.top_chord_section = ensure_valid_section(self.top_chord_section)
+        self.bottom_chord_section = ensure_valid_section(self.bottom_chord_section)
+        self.web_section = ensure_valid_section(self.web_section)
+        self.web_verticals_section = ensure_valid_section(self.web_verticals_section)
 
         # Initialize mutable attributes (prevents sharing between instances)
         self.nodes = []
