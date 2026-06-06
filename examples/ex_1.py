@@ -1,6 +1,5 @@
 from anastruct.fem.system import SystemElements
 
-
 ss = SystemElements()
 ss.add_element(location=[[0, 0], [3, 4]], EA=5e9, EI=8000)
 ss.add_element(location=[[3, 4], [8, 4]], EA=5e9, EI=4000)
