@@ -691,7 +691,9 @@ def describe_solve_tests():
             # Check that reactions are non-zero at support nodes
             for node_id in support_node_ids:
                 reaction = truss.system.get_node_results_system(node_id=node_id)["Fy"]
-                assert abs(reaction) > 0, f"Node {node_id} should have non-zero reaction"
+                assert (
+                    abs(reaction) > 0
+                ), f"Node {node_id} should have non-zero reaction"
 
             # Verify total vertical reaction equals applied load
             total_reaction = sum(
@@ -730,7 +732,9 @@ def describe_solve_tests():
             # Check that reactions are non-zero at support nodes
             for node_id in support_node_ids:
                 reaction = truss.system.get_node_results_system(node_id=node_id)["Fy"]
-                assert abs(reaction) > 0, f"Node {node_id} should have non-zero reaction"
+                assert (
+                    abs(reaction) > 0
+                ), f"Node {node_id} should have non-zero reaction"
 
             # Verify total vertical reaction equals applied load
             total_reaction = sum(

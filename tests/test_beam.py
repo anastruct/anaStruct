@@ -480,7 +480,9 @@ def describe_integration_tests():
         def it_validates_location_arguments():
             beam = SimpleBeam(length=10)
 
-            with raises(ValueError, match="Either absolute_location or relative_location"):
+            with raises(
+                ValueError, match="Either absolute_location or relative_location"
+            ):
                 beam.apply_point_load_to_spans(Fy=-100)
 
             with raises(ValueError, match="Only one of"):

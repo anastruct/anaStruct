@@ -258,8 +258,10 @@ class WarrenFlatTruss(FlatTruss):
         # half-unit inset used for the *offset* chord endpoints (t_x0).  The interior nodes of
         # the *corner* chord sit an additional half unit further in, so their base is
         # self.end_width + unit_width/2.
-        t_x0   = self.end_width                         # inset for offset-chord endpoints
-        b_base = self.end_width + self.unit_width / 2   # base x for corner-chord interior nodes
+        t_x0 = self.end_width  # inset for offset-chord endpoints
+        b_base = (
+            self.end_width + self.unit_width / 2
+        )  # base x for corner-chord interior nodes
 
         # Bottom chord nodes
         if self.end_type == "triangle_down":
@@ -290,7 +292,9 @@ class WarrenFlatTruss(FlatTruss):
     def define_connectivity(self) -> None:
         # triangle_down: bottom has corner endpoints → n_units+2 nodes; top is offset → n_units+1
         # triangle_up:   top has corner endpoints   → n_units+2 nodes; bottom is offset → n_units+1
-        n_bottom_nodes = int(self.n_units) + (2 if self.end_type == "triangle_down" else 1)
+        n_bottom_nodes = int(self.n_units) + (
+            2 if self.end_type == "triangle_down" else 1
+        )
         n_top_nodes = int(self.n_units) + (2 if self.end_type == "triangle_up" else 1)
 
         # Bottom chord connectivity
