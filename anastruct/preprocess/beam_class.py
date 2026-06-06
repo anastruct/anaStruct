@@ -31,7 +31,7 @@ class Beam(ABC):
         angle (float): Angle of the beam (degrees; 0 = horizontal, positive = CCW); defaults to 0.0
         section (SectionProps): Section properties for all beam elements; defaults to DEFAULT_BEAM_SECTION
         supports_type (Literal["simple", "pinned", "fixed"]): Type of supports to apply; defaults to "simple"
-        system (SystemElements): The FEM system containing all nodes, elements, and supports; initialized after adding elements
+        system (SystemElements): The FEM system containing all nodes, elements, and supports
     """
 
     # Common geometry
@@ -94,12 +94,9 @@ class Beam(ABC):
             self.span_lengths = [length]
 
         if angle != 0.0 and -2 * np.pi <= angle <= 2 * np.pi:
-            import warnings
-
-            warnings.warn(
-                f"A very small angle was provided ({angle}). "
-                f"Please ensure input units are degrees, not radians.",
-                stacklevel=2,
+            print(
+                f"WARNING: A very small angle was provided ({angle}). "
+                f"Please ensure input units are degrees, not radians."
             )
         if angle < 0 or angle >= 360:
             angle = angle % 360
@@ -292,7 +289,8 @@ class Beam(ABC):
                 relative_location must be provided.
             spans (Optional[Union[int, Sequence[int]]]): Span(s) to apply the load to. If None,
                 applies to all spans.
-            tolerance (float): Tolerance for matching existing node locations (length units). Defaults to beam length * 1e-4.
+            tolerance (float): Tolerance for matching existing node locations (length units).
+                Defaults to beam length * 1e-4.
         """
         if spans is None:
             spans = list(self.element_ids.keys())
