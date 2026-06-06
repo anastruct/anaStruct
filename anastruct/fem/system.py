@@ -30,8 +30,7 @@ from anastruct.vertex import Vertex, vertex_range
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-    from anastruct.fem.node import Node
-    from anastruct.types import (
+    from anastruct._types import (
         AxisNumber,
         Dimension,
         LoadDirection,
@@ -40,6 +39,7 @@ if TYPE_CHECKING:
         SupportDirection,
         VertexLike,
     )
+    from anastruct.fem.node import Node
 
 
 class SystemElements:
@@ -646,7 +646,7 @@ class SystemElements:
         element_id: int,
         location: Optional["VertexLike"] = None,
         factor: Optional[float] = None,
-    ) -> None:
+    ) -> dict[str, int]:
         """Insert a node into an existing structure.
         This can be done by adding a new Vertex at any given location, or by setting
         a factor of the elements length. E.g. if you want a node at 40% of the elements
@@ -658,6 +658,13 @@ class SystemElements:
                 Defaults to None.
             factor (Optional[float], optional): Fraction of distance from start to end of elmeent on which to
                 divide the element. Must be between 0 and 1. Defaults to None.
+
+        Returns:
+            dict[str, int]: Dictionary with keys:
+                'new_node_id': ID of the newly created node
+                'new_element_id1': ID of the first new element created
+                'new_element_id2': ID of the second new element created
+                'old_element_id': ID of the old element that was split
         """
         element_id_to_split = _negative_index_to_id(element_id, self.element_map)
         element_to_split = self.element_map[element_id_to_split]
@@ -752,6 +759,13 @@ class SystemElements:
 
         # Remove the old element from everywhere it's referenced
         self.remove_element(element_id_to_split)
+
+        return {
+            "new_node_id": self.id_last_node,
+            "new_element_id1": element_id1,
+            "new_element_id2": element_id2,
+            "old_element_id": element_id_to_split,
+        }
 
     def insert_node_old(
         self,
@@ -2114,12 +2128,14 @@ class SystemElements:
             return [node.phi_z for node in self.node_map.values()]
         raise NotImplementedError
 
-    def find_node_id(self, vertex: Union[Vertex, Sequence[float]]) -> Optional[int]:
+    def find_node_id(
+        self, vertex: Union[Vertex, Sequence[float]], tolerance: float = 1e-9
+    ) -> Optional[int]:
         """Find the ID of a certain location.
 
         Args:
             vertex (Union[Vertex, Sequence[float]]): Vertex_xz, [x, y], (x, y)
-
+            tolerance (float): Tolerance for matching existing node locations (length units). Defaults to 1e-9.
         Raises:
             TypeError: vertex must be a list, tuple or Vertex
 
@@ -2128,11 +2144,10 @@ class SystemElements:
         """
         vertex_v = Vertex(vertex)
         try:
-            tol = 1e-9
             return next(
                 filter(
-                    lambda x: math.isclose(x.vertex.x, vertex_v.x, abs_tol=tol)
-                    and math.isclose(x.vertex.y, vertex_v.y, abs_tol=tol),
+                    lambda x: math.isclose(x.vertex.x, vertex_v.x, abs_tol=tolerance)
+                    and math.isclose(x.vertex.y, vertex_v.y, abs_tol=tolerance),
                     self.node_map.values(),
                 )
             ).id

@@ -10,9 +10,9 @@ import numpy as np
 from anastruct.basic import FEMException
 
 if TYPE_CHECKING:
+    from anastruct._types import ElementType
     from anastruct.fem.node import Node
     from anastruct.fem.system import Spring
-    from anastruct.types import ElementType
     from anastruct.vertex import Vertex
 
 try:

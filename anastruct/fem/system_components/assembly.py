@@ -6,9 +6,9 @@ import numpy as np
 from anastruct.fem.elements import det_axial, det_moment, det_shear
 
 if TYPE_CHECKING:
+    from anastruct._types import AxisNumber
     from anastruct.fem.elements import Element
     from anastruct.fem.system import SystemElements
-    from anastruct.types import AxisNumber
 
 
 def set_force_vector(
@@ -223,8 +223,11 @@ def assemble_system_matrix(
     #
     # thus with appending numbers in the system matrix: column = row
 
-    for i in range(len(system.element_map)):
-        element = system.element_map[i + 1]
+    # Iterate over the actual elements rather than assuming the element ids are
+    # a contiguous 1..N sequence: remove_element (e.g. via insert_node) can leave
+    # gaps in element_map, and assembly is an order-independent accumulation into
+    # the system matrix indexed by node id (see #308).
+    for element in system.element_map.values():
         element_matrix = element.stiffness_matrix
 
         # n1 and n2 are starting indexes of the rows and the columns for node 1 and node 2

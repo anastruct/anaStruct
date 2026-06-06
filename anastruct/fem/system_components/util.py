@@ -7,8 +7,8 @@ from anastruct.fem.node import Node
 from anastruct.vertex import Vertex
 
 if TYPE_CHECKING:
+    from anastruct._types import VertexLike
     from anastruct.fem.system import MpType, Spring, SystemElements
-    from anastruct.types import VertexLike
 
 
 def check_internal_hinges(system: "SystemElements", node_id: int) -> None:
