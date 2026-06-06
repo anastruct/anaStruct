@@ -25,14 +25,10 @@ apply to any tests in which these occur:
 
 
 def describe_end_to_end_tests():
-    @pspec_context("End-to-End Tests (i.e. original unittest tests)")
-    def describe():
-        pass
+    # End-to-End Tests (i.e. original unittest tests)
 
     def context_example_1():
-        @pspec_context("Example 1")
-        def describe():
-            pass
+        # Example 1
 
         system = SystemElements()
         system.add_element(location=[[0, 0], [3, 4]], EA=5e9, EI=8000)
@@ -52,9 +48,7 @@ def describe_end_to_end_tests():
             assert system.solve() == approx(sol)
 
     def context_example_2():
-        @pspec_context("Example 2")
-        def describe():
-            pass
+        # Example 2
 
         system = SystemElements()
         system.add_truss_element(location=[[0, 0], [0, 5]], EA=5000)
@@ -76,9 +70,7 @@ def describe_end_to_end_tests():
             assert system.solve() == approx(sol)
 
     def context_example_3():
-        @pspec_context("Example 3")
-        def describe():
-            pass
+        # Example 3
 
         system = SystemElements()
         system.add_element(location=[[0, 0], [0, 5]], EA=15000, EI=5000)
@@ -105,9 +97,7 @@ def describe_end_to_end_tests():
             assert system.get_node_displacements(3)["phi_z"] == approx(0.0021605118130)
 
     def context_example_4():
-        @pspec_context("Example 4")
-        def describe():
-            pass
+        # Example 4
 
         system = SystemElements()
         system.add_element(location=[[0, 0], [5, 0]], EA=5e9, EI=8000, spring={2: 0})
@@ -127,9 +117,7 @@ def describe_end_to_end_tests():
             assert system.solve() == approx(sol)
 
     def context_example_5():
-        @pspec_context("Example 5")
-        def describe():
-            pass
+        # Example 5
 
         system = SystemElements()
         system.add_element(location=[[0, 0], [5, 0]], EA=5e9, EI=8000)
@@ -149,11 +137,7 @@ def describe_end_to_end_tests():
             assert system.solve() == approx(sol)
 
     def context_example_6_fixed_hinge():
-        @pspec_context(
-            "Example 6: Test the primary force vector when applying a q_load at a hinged element."
-        )
-        def describe():
-            pass
+        # Example 6: Test the primary force vector when applying a q_load at a hinged element.
 
         system = SystemElements()
         system.add_element([[0, 0], [7, 0]], spring={2: 0})
@@ -166,9 +150,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(1)["Tz"] == approx(-61.25, rel=1e-3)
 
     def context_example_7_rotational_spring():
-        @pspec_context("Example 7: Test the rotational springs")
-        def describe():
-            pass
+        # Example 7: Test the rotational springs
 
         def it_results_in_correct_solution(SS_7):
             sol = np.fromstring(
@@ -180,9 +162,7 @@ def describe_end_to_end_tests():
             assert np.allclose(SS_7.solve(), sol)
 
     def context_example_8_rotational_spring():
-        @pspec_context("Example 8: Test the plastic hinges")
-        def describe():
-            pass
+        # Example 8: Test the plastic hinges
 
         def it_results_in_correct_total_displacement(SS_8):
             SS_8.solve()
@@ -193,9 +173,7 @@ def describe_end_to_end_tests():
             assert u4 == approx(106.45829880642854)
 
     def context_example_11():
-        @pspec_context("Example 11")
-        def describe():
-            pass
+        # Example 11
 
         def it_results_in_correct_axial_loads(SS_11):
             SS_11.solve()
@@ -204,11 +182,7 @@ def describe_end_to_end_tests():
             assert SS_11.get_element_results(1)["length"] == approx(5.3851647)
 
     def context_example_12():
-        @pspec_context(
-            "Example 12: Moment loads, with system nodes having 0 moment loads"
-        )
-        def describe():
-            pass
+        # Example 12: Moment loads, with system nodes having 0 moment loads"
 
         def it_results_in_correct_moment_loads(SS_12):
             SS_12.solve()
@@ -218,9 +192,7 @@ def describe_end_to_end_tests():
             assert SS_12.get_node_results_system(4)["Tz"] == approx(-6.66667)
 
     def context_example_13():
-        @pspec_context("Example 13: X-axis loads, with system nodes having 0 Fx loads")
-        def describe():
-            pass
+        # Example 13: X-axis loads, with system nodes having 0 Fx loads
 
         def it_results_in_correct_moment_loads(SS_13):
             SS_13.solve()
@@ -230,9 +202,7 @@ def describe_end_to_end_tests():
             assert SS_13.get_node_results_system(4)["Fx"] == approx(-6.66667)
 
     def context_example_14():
-        @pspec_context("Example 14: Tests dead load and parallel load on axis.")
-        def describe():
-            pass
+        # Example 14: Tests dead load and parallel load on axis.
 
         def it_results_in_correct_axial_loads(SS_14):
             SS_14.solve()
@@ -243,9 +213,7 @@ def describe_end_to_end_tests():
             assert SS_14.get_node_results_system(5)["Fx"] == approx(5.18545)
 
     def context_example_15():
-        @pspec_context("Example 15: Tests dead load and parallel load on axis.")
-        def describe():
-            pass
+        # Example 15: Tests dead load and parallel load on axis.
 
         def it_results_in_correct_axial_loads(SS_15):
             SS_15.solve()
@@ -256,9 +224,7 @@ def describe_end_to_end_tests():
             assert SS_15.get_node_results_system(5)["Fx"] == approx(9.41394)
 
     def context_example_16():
-        @pspec_context("Example 16: Tests parallel load on axis.")
-        def describe():
-            pass
+        # Example 16: Tests parallel load on axis.
 
         def it_results_in_correct_axial_loads(SS_16):
             SS_16.solve()
@@ -269,18 +235,14 @@ def describe_end_to_end_tests():
             assert SS_16.get_node_results_system(5)["Fx"] == approx(5.65685)
 
     def context_example_18():
-        @pspec_context("Example 18: Buckling factor")
-        def describe():
-            pass
+        # Example 18: Buckling factor
 
         def it_results_in_correct_buckling_factor(SS_18):
             SS_18.solve(geometrical_non_linear=True)
             assert SS_18.buckling_factor == approx(600)
 
     def context_example_19():
-        @pspec_context("Example 19: Numerical displacement averaging")
-        def describe():
-            pass
+        # Example 19: Numerical displacement averaging
 
         def it_results_in_correct_deflections(SS_19):
             SS_19.solve()
@@ -289,9 +251,7 @@ def describe_end_to_end_tests():
             )
 
     def context_example_20():
-        @pspec_context("Example 20: Inserting a node")
-        def describe():
-            pass
+        # Example 20: Inserting a node
 
         def it_successfully_inserts_node(SS_20):
             x, y = SS_20.show_structure(values_only=True)
@@ -306,19 +266,60 @@ def describe_end_to_end_tests():
             assert SS_20.element_map[4].q_load == approx((1.6, 2.205258))
             assert SS_20.element_map[5].q_load == approx((2.205258, 3))
 
+    def context_insert_node_then_solve():
+        # insert_node deletes the split element and appends two new ones, leaving
+        # element_map with non-contiguous ids. The structure must still assemble
+        # and solve, giving the same result as the equivalent model built with
+        # that node defined up front (#308).
+        inserted = SystemElements(EA=15000, EI=5000, mesh=101)
+        inserted.add_element(location=[[0, 0], [10, 4]])
+        inserted.add_element(location=[[10, 4], [10, 0]])
+        inserted.add_support_hinged(node_id=1)
+        inserted.add_support_hinged(node_id=3)
+        inserted.q_load(q=5, element_id=1, direction="element")
+        inserted.point_load(node_id=2, Fx=4, Fy=0)
+        inserted.insert_node(element_id=2, factor=0.25)
+        inserted.point_load(node_id=4, Fx=8, Fy=0)
+        inserted.solve()
+
+        unsplit = SystemElements(EA=15000, EI=5000, mesh=101)
+        unsplit.add_element(location=[[0, 0], [10, 4]])
+        unsplit.add_element(location=[[10, 4], [10, 3]])
+        unsplit.add_element(location=[[10, 3], [10, 0]])
+        unsplit.add_support_hinged(node_id=1)
+        unsplit.add_support_hinged(node_id=4)
+        unsplit.q_load(q=5, element_id=1, direction="element")
+        unsplit.point_load(node_id=2, Fx=4, Fy=0)
+        unsplit.point_load(node_id=3, Fx=8, Fy=0)
+        unsplit.solve()
+
+        # the element ids are non-contiguous after the split
+        assert list(inserted.element_map.keys()) == [1, 3, 4]
+
+        def displacements_by_coordinate(system):
+            return {
+                (round(node.vertex.x, 6), round(node.vertex.y, 6)): (
+                    system.get_node_displacements(node_id)["ux"],
+                    system.get_node_displacements(node_id)["uy"],
+                )
+                for node_id, node in system.node_map.items()
+            }
+
+        inserted_disp = displacements_by_coordinate(inserted)
+        unsplit_disp = displacements_by_coordinate(unsplit)
+        assert set(inserted_disp) == set(unsplit_disp)
+        for coordinate, displacement in inserted_disp.items():
+            assert displacement == approx(unsplit_disp[coordinate])
+
     def context_find_node_id():
-        @pspec_context("find_node_id() function using Example 8")
-        def describe():
-            pass
+        # find_node_id() function using Example 8
 
         def it_finds_the_node_ids(SS_8):
             assert SS_8.find_node_id([4, 4]) == 6
             assert SS_8.find_node_id([3, -3]) is None
 
     def context_add_multiple_elements():
-        @pspec_context("add_multiple_elements() function")
-        def describe():
-            pass
+        # add_multiple_elements() function
 
         system = SystemElements()
         system.add_multiple_elements([[0, 0], [10, 10]], n=5)
@@ -328,9 +329,7 @@ def describe_end_to_end_tests():
             assert node_x_locations == [0, 2.0, 4.0, 6.0, 8.0, 10]
 
     def context_no_forces_assertion():
-        @pspec_context("Assertion error when no forces are entered")
-        def describe():
-            pass
+        # Assertion error when no forces are entered
 
         system = SystemElements()
         system.add_element([0, 10])
@@ -340,9 +339,7 @@ def describe_end_to_end_tests():
                 system.solve()
 
     def context_inclined_horizontal_rollers():
-        @pspec_context("Inclined rollers are equal to horizontal rollers")
-        def describe():
-            pass
+        # Inclined rollers are equal to horizontal rollers
 
         system = SystemElements()
         x = [0, 1, 2]
@@ -368,9 +365,7 @@ def describe_end_to_end_tests():
             assert u1["Tz"] == approx(u2["Tz"])
 
     def context_inclined_roller_reactions():
-        @pspec_context("Inclined roller forces are calculated correctly")
-        def describe():
-            pass
+        # Inclined roller forces are calculated correctly
 
         system = SystemElements()
         x = [0, 1, 2]
@@ -386,9 +381,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(3)["Fy"] == approx(-50)
 
     def context_inclined_roller_qload():
-        @pspec_context("Inclined rollers and q-loads work together")
-        def describe():
-            pass
+        # Inclined rollers and q-loads work together
 
         system = SystemElements(EA=356000, EI=1330)
         system.add_element(location=[[0, 0], [10, 0]])
@@ -404,9 +397,7 @@ def describe_end_to_end_tests():
             assert system.get_element_results(1)["Nmin"] == approx(-5)
 
     def context_deflection_averaging_complex():
-        @pspec_context("Deflection averaging test using example 26")
-        def describe():
-            pass
+        # Deflection averaging test using example 26
 
         def it_results_in_correct_deflections(SS_26):
             SS_26.solve()
@@ -415,9 +406,7 @@ def describe_end_to_end_tests():
             )
 
     def context_single_hinges_in_trusses():
-        @pspec_context("Reducing elements in trusses to single hinges only")
-        def describe():
-            pass
+        # Reducing elements in trusses to single hinges only
 
         system = SystemElements(EA=68300, EI=128, mesh=50)
         system.add_element(
@@ -457,12 +446,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(3)["Tz"] == approx(0)
 
     def context_multiple_elements_spacing():
-        @pspec_context(
-            "Tests bug fix for ensuring even spacing of multiple elements "
-            + "regardless of any floating point roundoff"
-        )
-        def describe():
-            pass
+        # Tests bug fix for ensuring even spacing of multiple elements regardless of any floating point roundoff
 
         system = SystemElements(EI=5e3, EA=1e5)
         system.add_multiple_elements([[0, 0], [10, 0]], 100)
@@ -474,9 +458,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(-1)["uy"] == approx(2 / 3)
 
     def context_vertical_spring():
-        @pspec_context("Test addition of vertical spring supports")
-        def describe():
-            pass
+        # Test addition of vertical spring supports
 
         system = SystemElements(mesh=250)
         system.add_element(
@@ -491,9 +473,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(2)["uy"] == approx(0.1)
 
     def context_rotational_roller_support():
-        @pspec_context("Test addition of roller supports with rotational restraint")
-        def describe():
-            pass
+        # Test addition of roller supports with rotational restraint
 
         system = SystemElements()
         system.add_element(location=[(0, 0), (0, 1)])
@@ -512,9 +492,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(2)["Tz"] == approx(166.6667)
 
     def context_rotational_support():
-        @pspec_context("Test addition of rotation-only supports")
-        def describe():
-            pass
+        # Test addition of rotation-only supports
 
         system = SystemElements()
         system.add_element(location=[(0, 0), (1, 0)])
@@ -533,9 +511,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(2)["Tz"] == approx(-166.6667)
 
     def context_load_cases():
-        @pspec_context("Test a trivial load case")
-        def describe():
-            pass
+        # Test a trivial load case
 
         system = SystemElements()
         system.add_truss_element(location=[[0, 0], [1000, 0]])
@@ -554,9 +530,7 @@ def describe_end_to_end_tests():
             assert results["dead"].get_node_results_system(2)["Fx"] == approx(14)
 
     def context_perpendicular_trapezoidal_load():
-        @pspec_context("Test a complex-loaded system with trapezoidal loads")
-        def describe():
-            pass
+        # Test a complex-loaded system with trapezoidal loads
 
         system = SystemElements()
         system.add_element(location=[(0, 0), (1, 0)])
@@ -582,9 +556,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(2)["Tz"] == approx(-5.8625)
 
     def context_internal_hinge_symmetry():
-        @pspec_context("Test bug fix for asymmetric results with internal hinges")
-        def describe():
-            pass
+        # Test bug fix for asymmetric results with internal hinges
 
         system = SystemElements()
         system.add_element(location=[[0, 0], [5, 0]], spring={2: 0})
@@ -606,9 +578,7 @@ def describe_end_to_end_tests():
             )
 
     def context_q_and_q_perp_loads():
-        @pspec_context("Test addition of simultaneous q and q_perp loads")
-        def describe():
-            pass
+        # Test addition of simultaneous q and q_perp loads
 
         system = SystemElements()
         system.add_element([2, 2])
@@ -626,9 +596,7 @@ def describe_end_to_end_tests():
             assert system.get_element_results(1)["Qmax"] == approx(2 * np.sqrt(2))
 
     def context_parallel_trapezoidal_load():
-        @pspec_context("Test additional of parallel trapezoidal loads")
-        def describe():
-            pass
+        # Test additional of parallel trapezoidal loads
 
         system = SystemElements()
         system.add_element([0, 1])
@@ -647,12 +615,7 @@ def describe_end_to_end_tests():
             assert system.get_node_results_system(1)["Fy"] == approx(-1)
 
     def context_load_case_example():
-        @pspec_context(
-            "Test documentation example of load cases from "
-            + "https://anastruct.readthedocs.io/en/latest/loadcases.html"
-        )
-        def describe():
-            pass
+        # Test documentation example of load cases from https://anastruct.readthedocs.io/en/latest/loadcases.html
 
         system = SystemElements()
         height = 10
@@ -732,315 +695,3 @@ def describe_end_to_end_tests():
             assert results["combination"].get_node_results_system(5)["Fy"] == approx(
                 wind_Fy + cables_Fy
             )
-
-
-def describe_analytical_validation_tests():
-    @pspec_context("Validation tests of results, based upon analytical equations")
-    def describe():
-        pass
-
-    def context_simply_supported_beam_validation():
-        @pspec_context("Simply-supported beam with UDL validation")
-        def describe():
-            pass
-
-        w = 1
-        l = 2
-        EI = 10000
-        EA = 1000
-
-        system = SystemElements(EI=EI, EA=EA, mesh=10000)
-        system.add_element([[0, 0], [l, 0]])
-        system.add_support_hinged([1, 2])
-        system.q_load(w, element_id=1)
-        system.solve()
-
-        def it_results_in_correct_moment_shear():
-            assert system.get_element_results(1)["Mmax"] == approx(w * l**2 / 8)
-            assert system.get_element_results(1)["Qmax"] == approx(w * l / 2)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(w * l / 2)
-            assert system.get_node_results_system(2)["Fy"] == approx(w * l / 2)
-
-        def it_results_in_correct_deflections():
-            assert system.get_element_results(1)["wmax"] == approx(
-                -5 * w * l**4 / (384 * EI)
-            )
-
-    def context_simply_supported_two_point_loads():
-        @pspec_context("Validation tests of results, based upon analytical equations")
-        def describe():
-            pass
-
-        p = 80
-        l = 5
-        a = l / 3
-        EI = 14000
-
-        system = SystemElements(EI=EI, mesh=10000)
-        system.add_element([[0, 0], [a, 0]])
-        system.add_element([[a, 0], [2 * a, 0]])
-        system.add_element([[2 * a, 0], [l, 0]])
-        system.add_support_hinged([1, 4])
-        system.point_load(node_id=2, Fy=p)
-        system.point_load(node_id=3, Fy=p)
-        system.solve()
-
-        def it_results_in_correct_moment_shear():
-            assert system.get_element_results(2)["Mmax"] == approx(p * a)
-            assert system.get_element_results(1)["Qmax"] == approx(p)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(p)
-            assert system.get_node_results_system(4)["Fy"] == approx(p)
-
-        def it_results_in_correct_deflections():
-            assert system.get_node_results_system(3)["uy"] + system.get_element_results(
-                2
-            )["wmax"] == approx(-((p * a) / (24 * EI)) * (3 * (l**2) - 4 * (a**2)))
-
-    def context_simply_supported_beam_point_load_validation():
-        @pspec_context("Simply-supported beam with point load at center validation")
-        def describe():
-            pass
-
-        w = 1
-        l = 2
-        EI = 10000
-        EA = 1000
-        p = 1
-
-        system = SystemElements(EI=EI, EA=EA, mesh=10000)
-        system.add_element([[0, 0], [l / 2, 0]])
-        system.add_element([[l / 2, 0], [l, 0]])
-        system.add_support_hinged([1, 3])
-        system.point_load(2, Fx=0, Fy=p, rotation=0)
-        system.solve()
-
-        def it_results_in_correct_moment_shear():
-            assert system.get_element_results(1)["Mmax"] == approx(p * l / 4)
-            assert system.get_element_results(1)["Qmax"] == approx(p / 2)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(p / 2)
-            assert system.get_node_results_system(3)["Fy"] == approx(p / 2)
-
-        def it_results_in_correct_deflections():
-            assert system.get_node_results_system(2)["uy"] == approx(
-                -p * l**3 / (48 * EI)
-            )
-
-    def context_fixed_ends_beam_point_load_validation():
-        @pspec_context("Beam fixed at both ends with concentrated load at center")
-        def describe():
-            pass
-
-        p = 200
-        l = 8
-        x = 3
-        EI = 23000
-
-        system = SystemElements(EI=EI, mesh=9000)
-        system.add_element([[0, 0], [x, 0]])
-        system.add_element([[x, 0], [l / 2, 0]])
-        system.add_element([[l / 2, 0], [l, 0]])
-        system.add_support_fixed([1, 4])
-        system.point_load(3, Fx=0, Fy=200, rotation=0)
-        system.solve()
-
-        def it_results_in_correct_moment_shear():
-            assert system.get_element_results(2)["Mmin"] == approx(p / 8 * (4 * x - l))
-            assert system.get_element_results(2)["Qmax"] == approx(p / 2)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(p / 2)
-            assert system.get_node_results_system(4)["Fy"] == approx(p / 2)
-
-        def it_results_in_correct_deflections():
-            assert system.get_node_results_system(2)["uy"] == approx(
-                -p * x**2 / (48 * EI) * (3 * l - 4 * x)
-            )
-
-    def context_3_span_continuous_beam_2_UDL_loads_validation():
-        @pspec_context(
-            "Continuous Beam spanning over three supports with two UDL in the outer spans"
-        )
-        def describe():
-            pass
-
-        w = 70
-        l = 5
-        EI = 15000
-
-        system = SystemElements(EI=EI, mesh=20000)
-        system.add_element([[0, 0], [l, 0]])
-        system.add_element([[l, 0], [2 * l, 0]])
-        system.add_element([[2 * l, 0], [3 * l, 0]])
-        system.add_support_hinged([1, 2, 3, 4])
-        system.q_load(w, element_id=1)
-        system.q_load(w, element_id=3)
-        system.solve()
-
-        def it_results_in_correct_moment_shear():
-            assert system.get_element_results(1)["Mmax"] == approx(0.10125 * w * l**2)
-            assert system.get_element_results(2)["Mmax"] == approx(-0.050 * w * l**2)
-            assert system.get_element_results(1)["Qmin"] == approx(-0.55 * w * l)
-            assert system.get_element_results(2)["Qmax"] == approx(0)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(0.45 * w * l)
-            assert system.get_node_results_system(3)["Fy"] == approx(0.55 * w * l)
-
-        def it_results_in_correct_deflections():
-            assert system.get_element_results(1)["wmax"] == approx(
-                -0.009917469 * w * l**4 / EI
-            )
-
-            def it_results_in_correct_deflections():
-                assert system.get_node_results_system(2)["uy"] == approx(
-                    -p * l**3 / (48 * EI)
-                )
-
-    def context_fixed1end_simplySupported_UDL_validation():
-        @pspec_context(
-            "beam fixed at one end and simply supported at the other with UDL"
-        )
-        def describe():
-            pass
-
-        EA = 3420000  # KN.m/m
-        EI = 83100  # KN.m^2
-        w = 1  # KN/m
-        l = 2  # m
-
-        system = SystemElements(EA=EA, EI=EI)
-        system.add_element([[0, 0], [l, 0]])
-        system.add_support_hinged(1)
-        system.add_support_fixed(2)
-        system.q_load(w, element_id=1)
-        system.solve()
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(3 * w * l / 8)
-            assert system.get_node_results_system(2)["Fy"] == approx(5 * w * l / 8)
-            assert system.get_node_results_system(2)["Tz"] == approx(-w * (l**2) / 8)
-
-        def it_results_in_correct_deflections():
-            assert system.get_element_results(1)["wmax"] == approx(
-                -w * (l**4) / (185 * EI), rel=1e-3
-            )
-
-    def context_fixed1end_simplySupported_pointLoad_validation():
-        @pspec_context(
-            "beam fixed at one end and simply supported on other with point load at the middle"
-        )
-        def describe():
-            pass
-
-        EA = 3420000  # KN.m/m
-        EI = 83100  # KN.m^2
-        p = 1  # KN
-        l = 2  # m
-
-        system = SystemElements(EA=EA, EI=EI, mesh=10000)
-        system.add_element([[0, 0], [l * (1 / 5) ** 0.5, 0]])
-        system.add_element([[l * (1 / 5) ** 0.5, 0], [l / 2, 0]])
-        system.add_element([[l / 2, 0], [l, 0]])
-        system.add_support_hinged(1)
-        system.add_support_fixed(4)
-        system.point_load(3, Fx=0, Fy=p, rotation=0)
-        system.solve()
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(5 * p / 16)
-            assert system.get_node_results_system(4)["Fy"] == approx(11 * p / 16)
-            assert system.get_node_results_system(4)["Tz"] == approx(-3 * p * l / 16)
-
-        def it_results_in_correct_deflections():
-            assert system.get_node_results_system(2)["uy"] == approx(
-                -p * (l**3) / (48 * EI * 5**0.5)
-            )
-
-    def context_beam_fixed_on_both_ends_UDL():
-        @pspec_context("beam with fixed supports at both ends and UDL")
-        def describe():
-            pass
-
-        EA = 3420000  # KN.m/m
-        EI = 83100  # KN.m^2
-        w = 1  # KN/m
-        l = 2  # m
-
-        system = SystemElements(EA=EA, EI=EI, mesh=2000)
-        system.add_element([[0, 0], [l, 0]])
-        system.add_support_fixed([1, 2])
-        system.q_load(w, 1)
-        system.solve()
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(w * l / 2)
-            assert system.get_node_results_system(2)["Fy"] == approx(w * l / 2)
-            assert system.get_node_results_system(1)["Tz"] == approx(w * l**2 / 12)
-            assert system.get_node_results_system(2)["Tz"] == approx(-w * l**2 / 12)
-
-        def it_results_in_correct_deflections():
-            assert system.get_element_results(1)["wmax"] == approx(
-                -w * l**4 / (384 * EI)
-            )
-
-    def context_cantilever_UDL_validation():
-        @pspec_context("Cantilever beam with UDL validation")
-        def describe():
-            pass
-
-        w = 10
-        l = 3
-        EI = 10000
-        EA = 1000
-
-        system = SystemElements(EI=EI, EA=EA, mesh=100)
-        system.add_element([[0, 0], [l, 0]])
-        system.add_support_fixed([2])
-        system.q_load(w, element_id=1)
-        system.solve()
-
-        def it_results_in_correct_moment_shear():
-            assert system.get_element_results(1)["Mmin"] == approx(-w * l**2 / 2)
-            assert system.get_element_results(1)["Qmin"] == approx(-w * l)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(2)["Fy"] == approx(w * l)
-
-        def it_results_in_correct_deflections():
-            assert system.get_node_results_system(1)["uy"] == approx(
-                -w * l**4 / (8 * EI)
-            )
-
-    def context_remove_element():
-        @pspec_context("Removing an element from a propped beam")
-        def describe():
-            pass
-
-        system = SystemElements()
-        system.add_element([[0, 0], [10, 0]])
-        system.add_element([[10, 0], [15, 0]])
-        system.add_support_hinged(1)
-        system.add_support_hinged(2)
-        system.q_load(q=-1, element_id=1)
-        system.q_load(q=-1, element_id=2)
-        system.point_load(node_id=3, Fy=-10)
-        system.remove_element(2)
-        system.solve()
-
-        def it_removes_element():
-            assert len(system.element_map) == 1
-            assert not (2 in system.loads_q)
-
-        def it_removes_orphaned_node():
-            assert len(system.node_map) == 2
-            assert not (3 in system.loads_point)
-
-        def it_results_in_correct_reactions():
-            assert system.get_node_results_system(1)["Fy"] == approx(-5)
-            assert system.get_node_results_system(2)["Fy"] == approx(-5)

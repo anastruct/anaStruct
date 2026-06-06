@@ -2,7 +2,6 @@ from anastruct.fem.system import SystemElements
 from anastruct.material.profile import HEA
 from anastruct.material.units import to_kNm2, to_kN
 
-
 load_factor = 3
 
 E = 210e3

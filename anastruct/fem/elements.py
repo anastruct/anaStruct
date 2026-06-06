@@ -10,9 +10,9 @@ import numpy as np
 from anastruct.basic import FEMException
 
 if TYPE_CHECKING:
+    from anastruct._types import ElementType
     from anastruct.fem.node import Node
     from anastruct.fem.system import Spring
-    from anastruct.types import ElementType
     from anastruct.vertex import Vertex
 
 try:
@@ -91,9 +91,11 @@ class Element:
         self.shear_force: Optional[np.ndarray] = None
         self.axial_force: Optional[np.ndarray] = None
         self.deflection: Optional[np.ndarray] = None
+        self.total_deflection: Optional[np.ndarray] = None
         self.extension: Optional[np.ndarray] = None
-        self.max_deflection = None
-        self.max_extension = None
+        self.max_deflection: Optional[float] = None
+        self.max_total_deflection: Optional[float] = None
+        self.max_extension: Optional[float] = None
         self.nodes_plastic: List[bool] = [False, False]
         self.compile_constitutive_matrix(initial=True)
         self.compile_stiffness_matrix()
@@ -263,6 +265,7 @@ class Element:
             "bending_moment",
             "shear_force",
             "deflection",
+            "total_deflection",
             "extension",
             "N_1",
             "N_2",

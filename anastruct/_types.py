@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Literal, Sequence, Union
+from typing import TYPE_CHECKING, Dict, Literal, Sequence, TypedDict, Union
 
 import numpy as np
 
@@ -15,3 +15,12 @@ OrientAxis = Literal["y", "z"]
 Spring = Dict[Literal[1, 2], float]
 SupportDirection = Literal["x", "y", "1", "2", 1, 2]
 VertexLike = Union[Sequence[Union[float, int]], np.ndarray, "Vertex"]
+
+SectionProps = TypedDict(
+    "SectionProps",
+    {
+        "EI": float,
+        "EA": float,
+        "g": float,
+    },
+)

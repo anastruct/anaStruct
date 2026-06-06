@@ -280,8 +280,11 @@ class ElementLevel:
             w2 = w2[::-1] - lx[::-1] * np.tan(alpha2)
 
             element.deflection = -(w1 + w2) / 2.0
-            assert element.deflection is not None
-            element.max_deflection = np.max(np.abs(element.deflection))
+        else:  # truss element has no bending
+            element.deflection = np.zeros(con)
+
+        assert element.deflection is not None
+        element.max_deflection = np.max(np.abs(element.deflection))
 
         # Extension
         assert element.axial_force is not None
@@ -300,8 +303,20 @@ class ElementLevel:
         element.extension = -1 * (u1 + u2) / 2.0
         element.max_extension = np.max(np.abs(element.extension))
 
-        # assert element.N_1 is not None
-        # assert element.N_2 is not None
-        # u = 0.5 * (element.N_1 + element.N_2) / element.EA * element.l
-        # du = u / con
-        # element.extension = du * (np.arange(con) + 1)
+        # Total deflection
+        ux1 = element.node_1.ux
+        uy1 = -element.node_1.uy
+        ux2 = element.node_2.ux
+        uy2 = -element.node_2.uy
+
+        n = len(element.deflection)
+        x_val = np.linspace(ux1, ux2, n)
+        y_val = np.linspace(uy1, uy2, n)
+
+        element.total_deflection = (
+            element.deflection
+            + x_val * math.sin(element.angle)
+            - y_val * math.cos(element.angle)
+        )
+
+        element.max_total_deflection = np.max(np.abs(element.total_deflection))

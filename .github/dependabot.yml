@@ -14,3 +14,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      minor_and_patch:
+        patterns: 
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

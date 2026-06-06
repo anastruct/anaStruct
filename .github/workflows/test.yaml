@@ -4,20 +4,22 @@ on: [pull_request]
 
 jobs:
   min_build:
-    name: Run Code Checks and Tests on Python 3.10
+    name: Run Code Checks and Tests on Python 3.12
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - name: Install poetry 
+        run: pipx install poetry
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "poetry"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade poetry
           poetry install
       - name: Run linting check with pylint
         run: |
@@ -30,7 +32,7 @@ jobs:
           poetry run mypy -p anastruct
       - name: Run FEM tests with pytest
         run: |
-          poetry run pytest --pspec tests/
+          poetry run pytest
 
   run_tests:
     name: Run FEM Testing Suite on Multiple Python Versions
@@ -38,19 +40,21 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - name: Install poetry 
+        run: pipx install poetry
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "poetry"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade poetry
           poetry install
 
       - name: Run FEM tests with pytest
         run: |
-          poetry run pytest --pspec tests/
+          poetry run pytest

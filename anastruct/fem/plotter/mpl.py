@@ -47,6 +47,7 @@ class Plotter:
         self.fig: Optional["Figure"] = None
         self.plot_colors: Dict[str, str] = {
             "support": "r",
+            "hinge": "k",
             "element": "k",
             "node_number": "k",
             "element_number": "k",
@@ -330,7 +331,7 @@ class Plotter:
             self.axes[axes_i].add_patch(support_patch)
 
         for node, _ in self.system.supports_spring_x:
-            xval = np.arange(0, 9, 1) * dh + node.vertex.x
+            xval = np.arange(0, 9, 1, dtype=np.float64) * dh + node.vertex.x
             yval = (
                 np.array([0, 0, left, right, left, right, left, 0, 0]) + node.vertex.y
             )
@@ -346,6 +347,25 @@ class Plotter:
                 radius=h * 0.9,
                 color=self.plot_colors["support"],
                 zorder=10,
+            )
+            self.axes[axes_i].add_patch(support_patch)
+
+    def __internal_hinges_patch(self, max_val: float, axes_i: int = 0) -> None:
+        """Plots the internal hinges.
+
+        Args:
+            max_val (float): Max scale of the plot
+            axes_i (int, optional): Which set of axes to plot on (for multi-plot windows). Defaults to 0.
+        """
+        radius = PATCH_SIZE * max_val / 2
+        for node in self.system.internal_hinges:
+            support_patch = mpatches.Circle(
+                (node.vertex.x, node.vertex.y),
+                radius,
+                edgecolor=self.plot_colors["hinge"],
+                facecolor="w",
+                linewidth=2,
+                zorder=9,
             )
             self.axes[axes_i].add_patch(support_patch)
 
@@ -724,6 +744,7 @@ class Plotter:
             self.__roll_support_patch(max_plot_range * scale)
             self.__rotating_spring_support_patch(max_plot_range * scale)
             self.__spring_support_patch(max_plot_range * scale)
+            self.__internal_hinges_patch(max_plot_range * scale)
 
         if verbosity == 0:
             # add_loads
@@ -836,7 +857,7 @@ class Plotter:
         self.axes[axes_i].plot(x_val, y_val, color=color)
 
         if node_results and force_1 and force_2:
-            self._add_node_values(x_val, y_val, force_1, force_2, digits)
+            self._add_node_values(x_val, y_val, force_1, force_2, digits, axes_i=axes_i)
 
     def plot(self) -> None:
         """Plots the figure."""
@@ -871,8 +892,8 @@ class Plotter:
         self.plot_structure(
             figsize, 1, scale=scale, offset=offset, gridplot=gridplot, axes_i=axes_i
         )
-        assert self.system.element_map[1].axial_force is not None
-        con = len(self.system.element_map[1].axial_force)
+        assert list(self.system.element_map.values())[0].axial_force is not None
+        con = len(list(self.system.element_map.values())[0].axial_force)
 
         if factor is None:
             max_force = max(
@@ -982,8 +1003,8 @@ class Plotter:
         self.plot_structure(
             figsize, 1, scale=scale, offset=offset, gridplot=gridplot, axes_i=axes_i
         )
-        assert self.system.element_map[1].bending_moment is not None
-        con = len(self.system.element_map[1].bending_moment)
+        assert list(self.system.element_map.values())[0].bending_moment is not None
+        con = len(list(self.system.element_map.values())[0].bending_moment)
         if factor is None:
             # maximum moment determined by comparing the node's moments and the sagging moments.
             max_moment = max(
@@ -1287,13 +1308,10 @@ class Plotter:
             max_displacement = max(
                 map(
                     lambda el: (
-                        max(
-                            abs(el.node_1.ux),
-                            abs(el.node_1.uy),
-                            el.max_deflection or 0,
+                        np.sqrt(
+                            (el.max_extension or 0) ** 2
+                            + (el.max_total_deflection or 0) ** 2
                         )
-                        if el.type == "general"
-                        else 0
                     ),
                     self.system.element_map.values(),
                 )
@@ -1327,6 +1345,7 @@ class Plotter:
                             deflection[index],
                             index,
                             3,
+                            axes_i=axes_i,
                         )
         if show:
             self.plot()

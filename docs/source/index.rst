@@ -39,6 +39,10 @@ Indices and tables
 
    vertex
 
+   preprocessing_beams
+
+   preprocessing_trusses
+
    saving
 
    examples

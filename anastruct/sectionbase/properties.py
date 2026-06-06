@@ -5,7 +5,7 @@ from anastruct.sectionbase.sectionbase import section_base
 
 
 def steel_section_properties(
-    **kwargs: Dict[str, Any]
+    **kwargs: Dict[str, Any],
 ) -> Tuple[str, float, float, float]:
     """Get steel section properties
 

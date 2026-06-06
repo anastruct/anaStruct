@@ -180,7 +180,7 @@ Take a look at this blog post. Here anaStruct was used to do a non linear water 
         g = IPE[450]['G'] / 100
         
         # New system.
-        ss = SystemElements(mesh=3, plot_backend="mpl")
+        ss = SystemElements(mesh=3)
         
         # span 1
         first = dict(

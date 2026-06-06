@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Sequence, Union
 import numpy as np
 
 if TYPE_CHECKING:
-    from anastruct.types import NumberLike, VertexLike
+    from anastruct._types import NumberLike, VertexLike
 
 
 class Vertex:

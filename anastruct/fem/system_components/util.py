@@ -7,8 +7,8 @@ from anastruct.fem.node import Node
 from anastruct.vertex import Vertex
 
 if TYPE_CHECKING:
+    from anastruct._types import VertexLike
     from anastruct.fem.system import MpType, Spring, SystemElements
-    from anastruct.types import VertexLike
 
 
 def check_internal_hinges(system: "SystemElements", node_id: int) -> None:
@@ -201,6 +201,48 @@ def det_node_ids(
             system._vertices[k] = node_id
         node_ids.append(node_id)
     return node_ids[0], node_ids[1]
+
+
+def add_node(
+    system: "SystemElements", point: Vertex, node_id: Optional[int] = None
+) -> int:
+    """Add a node, optionally with a specific ID, without adding an element
+
+    Args:
+        system (SystemElements): System in which the nodes are located
+        point (Vertex): Location of the node
+        node_id (Optional[int], optional): node_id to assign to the node. Defaults to None,
+            which means to use the first available node_id automatically.
+
+    Raises:
+        FEMException: Raised when the location is already assigned to a different node id.
+        FEMException: Raised when the node id is already assigned to a different location.
+
+    Returns:
+        int: The node id of the added (or existing) node
+    """
+    if point in system._vertices:
+        if node_id is not None:
+            existing_node_id = system._vertices[point]
+            if existing_node_id != node_id:
+                raise FEMException(
+                    "Flawed inputs",
+                    f"Location {point} is already assigned to node id {existing_node_id}, "
+                    f"cannot assign to node id {node_id}.",
+                )
+        return existing_node_id
+
+    if node_id is None:
+        node_id = max(system.node_map.keys(), default=0) + 1
+    elif node_id in system.node_map and system.node_map[node_id].vertex != point:
+        raise FEMException(
+            "Flawed inputs",
+            f"Node id {node_id} is already assigned to a different location.",
+        )
+
+    system._vertices[point] = node_id
+    system.node_map[node_id] = Node(node_id, vertex=point)
+    return node_id
 
 
 def support_check(system: "SystemElements", node_id: int) -> None:

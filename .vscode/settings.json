@@ -44,5 +44,7 @@
   "pylint.severity": {
     "refactor": "Information"
   },
-  "python.analysis.typeCheckingMode": "basic"
+  "python.analysis.typeCheckingMode": "basic",
+  "python.testing.pytestEnabled": true,
+  "testing.coverageToolbarEnabled": true
 }

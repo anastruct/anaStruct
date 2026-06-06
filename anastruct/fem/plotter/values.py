@@ -80,11 +80,10 @@ class PlottingValues:
             max_displacement = max(
                 map(
                     lambda el: (
-                        max(
-                            abs(el.node_1.ux), abs(el.node_1.uy), el.max_deflection or 0
+                        np.sqrt(
+                            (el.max_extension or 0) ** 2
+                            + (el.max_total_deflection or 0) ** 2
                         )
-                        if el.type == "general"
-                        else 0
                     ),
                     self.system.element_map.values(),
                 )
@@ -171,7 +170,9 @@ class PlottingValues:
         if factor is None:
             max_force = max(
                 map(
-                    lambda el: np.max(np.abs(el.shear_force or 0.0)),
+                    lambda el: np.max(
+                        np.abs(el.shear_force if el.shear_force is not None else [0.0])
+                    ),
                     self.system.element_map.values(),
                 )
             )

@@ -90,3 +90,4 @@ build/
 .ipynb_checkpoints/
 
 dev/
+.coverage
