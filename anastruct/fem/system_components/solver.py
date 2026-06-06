@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+
 from anastruct.basic import converge
 
 if TYPE_CHECKING:
@@ -111,8 +112,9 @@ def det_linear_buckling(system: "SystemElements") -> float:
     # solve (k -λkg)x = 0
 
     # The following two lines are equivalent to the cleaner
-    # scipy.linalg.eigvals(k0, kg), but doing this allows us
-    # to drop the scipy dependency
+    # `scipy.linalg.eigvals(k0, kg)``, but doing this in numpy
+    # instead allows us to drop the very heavy scipy dependency
+    # that was needed for no other reason than this one line.
     invkg_k0 = np.linalg.inv(kg) * k0
     eigenvalues = np.abs(np.linalg.eigvals(invkg_k0))
     return float(np.min(eigenvalues))

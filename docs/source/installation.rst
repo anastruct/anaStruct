@@ -1,7 +1,7 @@
 Installation
 ############
 
-You will need Python and a few packages as pre-requisites of the anaStruct on your system.
+You will need Python to install anaStruct on your system. 
 
 
 Install the Python
@@ -21,12 +21,12 @@ In case you are missing the python on your system, you can install it from the r
 ::
 
     sudo apt-get update
-    sudo apt-get install python3.9
+    sudo apt-get install python3
 
 Windows
 =======
 
-On windows (and for other OS's too) you can download the installation source of the version you prefer from the `Python's website <https://www.python.org>`_. You can choose between the various versions and cpu architectures.
+On Windows (and for other OS's) you can download the installer for the version you prefer from `Python's website <https://www.python.org>`_.
 
 Mac
 =====
@@ -37,34 +37,25 @@ For Mac OS install Python 3 using homebrew
 
     brew install python
 
-Install the prerequisites
-*************************
+Install anaStruct
+*****************
 
-You will need the `NumPy <https://numpy.org/>`_ and `SciPy <https://scipy.org/>`_. packages to be able to use the anaStruct package. However, if you are using the pip to install the package, it will take care of all dependencies and their versions.
+anaStruct is a lightweight package with only one mandatory prerequisite: `numpy`. If you want to use the plotting features of the package, then you will also need `matplotlib`. The installation process will automatically install these dependencies for you.
 
-Install the anaStruct
-*********************
-
-You can install anaStruct with pip! If you like to use the computational backend of the package without having the plotting features, simply run the code below in the terminal. Pip will install a headless version of anaStruct (with no plotting abilities).
+If you like to use the computational backend of the package without having the plotting features, simply run the code below in the terminal. Pip will install a headless version of anaStruct (with no plotting abilities).
 
 ::
 
-    python -m pip install anastruct
+    pip install anastruct
 
 Otherwise you can have a full installation using the following code in your terminal.
 
 ::
 
-    python -m pip install anastruct[plot]
+    pip install anastruct[plot]
 
-In case you need a specific version of the package, that's possible too. Simple declare the version condition over the code in terminal.
-
-::
-
-    python -m pip install anastruct==1.4.1
-
-Alternatively, you can build the package from the source by cloning the source from the git repository. Updates are made regularly released on `PyPi <https://pypi.org/>`_, and if you'd like the bleeding edge newest features and fixes, or if you'd like to contribute to the development of `anaStruct <https://pypi.org/project/anastruct/>`_, then install from github.
+Alternatively, you can build the package from source by cloning the source from the git repository. Updates are regularly released on `PyPi <https://pypi.org/>`_, but if you'd like the bleeding edge newest features and fixes, or if you'd like to contribute to the development of `anaStruct <https://pypi.org/project/anastruct/>`_, then install from github.
 
 ::
 
-    pip install git+https://github.com/ritchie46/anaStruct.git
+    pip install git+https://github.com/anastruct/anaStruct.git
