@@ -51,7 +51,7 @@ matplotlib = "==3.10.9"
 
 [tool.poetry.group.test.dependencies]
 pylint = "==4.0.5"
-mypy = "==1.18.2"
+mypy = "==2.1.0"
 black = { version = "==26.5.1", extras = ["jupyter"] }
 pytest = "==9.0.3"
 pytest-cov = "==7.1.0"
