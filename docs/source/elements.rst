@@ -93,10 +93,54 @@ add_truss_element
 .. automethod:: anastruct.fem.system.SystemElements.add_truss_element
 
 
+.. _end-releases:
+
+End releases: hinges and rotational springs
+-------------------------------------------
+
+The ends of a standard element can be released with the :code:`spring` argument of :code:`add_element`,
+:code:`add_multiple_elements` and :code:`add_element_grid`. The keys are the element nodes (1 and 2), the values the
+rotational stiffness :code:`k` of the connection (moment per radian).
+
+* :code:`k = 0` is a hinge. The end carries no bending moment. An element with one hinge has the rotational stiffness
+  :math:`3EI/l` instead of :math:`4EI/l`; the rotation of the hinge is eliminated by static condensation.
+* :code:`k > 0` is a rotational spring in series with the element: the flexibilities add,
+  :math:`C = C_{element} + \mathrm{diag}(1/k_1, 1/k_2)`. A very large :code:`k` approaches a rigid connection.
+* A node is an internal hinge when it is declared with :code:`add_internal_hinge`, or when every element that meets in
+  the node has a hinge there (:code:`{1: 0}` or :code:`{2: 0}`). All the elements are then released at the node. If one
+  or more elements are rigidly connected, they share the rotation of the node, which is solved like any other degree of
+  freedom (a moment load or a rotational support at the node is carried by the rigid elements); only the elements with
+  a hinge are released, through their own springs. The result does not depend on the order in which the elements were
+  added, and the :code:`spring` dictionaries given by the user are never modified.
+
+.. code-block:: python
+
+    ss = SystemElements(EA=1e9, EI=1e4)
+    # fixed at node 1, hinge at the end of the element: M = q * L**2 / 8
+    ss.add_element([[0, 0], [6, 0]], spring={2: 0})
+    ss.add_support_fixed(1)
+    ss.add_support_hinged(2)
+    ss.q_load(-10, 1)
+    ss.solve()
+
+    # end spring of 50 kNm/rad: tip deflection = P * L**3 / (3 * EI) + P * L**2 / k
+    ss = SystemElements(EA=1e9, EI=1e4)
+    ss.add_element([[0, 0], [4, 0]], spring={1: 50})
+    ss.add_support_fixed(1)
+    ss.point_load(2, Fy=-10)
+    ss.solve()
+
+Mechanical loads, thermal loads and imposed displacements all use the same condensed stiffness, so releases are exact
+for each of them.
+
 Discretization
 --------------
 
-You can discretize an element in multiple smaller elements with the discretize method.
+You can discretize an element in multiple smaller elements with the discretize method. The supports, loads, imposed
+displacements and internal hinges are carried over. Hinges, rotational springs and plastic moments stay at the ends of
+the original element. Truss elements are not divided, because the nodes between collinear truss elements would be
+mechanisms. Note that the ids of the nodes and elements of the new mesh differ from the original ones; use
+:code:`find_node_id` to find a node by its location.
 
 .. automethod:: anastruct.fem.system.SystemElements.discretize
 

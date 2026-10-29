@@ -32,6 +32,10 @@ class SystemLevel:
         Results place in SystemElements class: self.system.node_map (list)
         """
         for k, v in self.system.node_element_map.items():
+            # the node objects are replaced below; keep what is not a result
+            elements = self.system.node_map[k].elements
+            hinge = self.system.node_map[k].hinge
+
             # reset nodes in case of iterative calculation
             self.system.node_map[k].reset()
 
@@ -55,6 +59,9 @@ class SystemLevel:
                 self.system.node_map[k].ux = -node.ux
                 self.system.node_map[k].uy = -node.uy
                 self.system.node_map[k].phi_z = -node.phi_z
+
+            self.system.node_map[k].elements = elements
+            self.system.node_map[k].hinge = hinge
 
     def reaction_forces(self) -> None:
         """Determines the reaction forces on the system level.
@@ -83,9 +90,7 @@ class SystemLevel:
             node.Fx *= -1
             node.Fy *= -1
             node.Tz *= -1
-            node.ux = 0.0
-            node.uy = 0.0
-            node.phi_z = 0.0
+            # keep the (possibly imposed) displacements of the support node
 
     def element_results(self) -> None:
         """Determines the element results for all elements in the system on element level."""
@@ -159,10 +164,12 @@ class ElementLevel:
                 Fy = node.Fy
                 ux = node.ux
                 uy = node.uy
-                node.Fy = c * Fy + s * Fx
-                node.Fx = -(c * Fx + s * Fy)
-                node.ux = c * ux + s * uy
-                node.uy = c * uy + s * ux
+                # from the system of the support to the global system: R(angle), the
+                # inverse of the transformation of the loads and the kinematic matrix
+                node.Fx = c * Fx - s * Fy
+                node.Fy = s * Fx + c * Fy
+                node.ux = c * ux - s * uy
+                node.uy = s * ux + c * uy
 
     @staticmethod
     def determine_axial_force(element: "Element", con: int) -> None:

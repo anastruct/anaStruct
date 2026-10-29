@@ -1,4 +1,5 @@
 import copy
+import math
 import pprint
 from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Union
 
@@ -94,8 +95,185 @@ class LoadCase:
         self.c += 1
         self.spec[f"dead_load-{self.c}"] = {"element_id": element_id, "g": g}
 
+    def imposed_displacement(
+        self,
+        node_id: int,
+        ux: Optional[float] = None,
+        uy: Optional[float] = None,
+        phi_z: Optional[float] = None,
+    ) -> None:
+        """
+        Apply an imposed displacement (support settlement) and/or rotation to a node.
+
+        The imposed values are multiplied by the load factor of the load combination,
+        so a settlement belongs to a single load case and is not counted again in the
+        other cases.
+
+        :param node_id: (int) representing the node ID
+        :param ux: (flt) Imposed displacement in the global x direction
+        :param uy: (flt) Imposed displacement in the global y direction
+        :param phi_z: (flt) Imposed rotation about the global z-axis in radians
+        """
+        self.c += 1
+        self.spec[f"imposed_displacement-{self.c}"] = {
+            "node_id": node_id,
+            "ux": ux,
+            "uy": uy,
+            "phi_z": phi_z,
+        }
+
+    def thermal_load(
+        self,
+        element_id: Union[int, Sequence[int]],
+        delta_t: Union[float, Sequence[float]],
+        alpha: Union[float, Sequence[float]],
+        delta_t_gradient: Optional[Union[float, Sequence[float]]] = None,
+        h: Optional[Union[float, Sequence[float]]] = None,
+    ) -> None:
+        """
+        Apply a thermal load to an element.
+
+        :param element_id: (int/ list) representing the element ID
+        :param delta_t: (flt/ list) Uniform temperature change of the element
+        :param alpha: (flt/ list) Coefficient of thermal expansion of the element material
+        :param delta_t_gradient: (flt/ list) Temperature difference over the section depth.
+                                 Requires `h`.
+        :param h: (flt/ list) Section depth over which `delta_t_gradient` acts
+        """
+        self.c += 1
+        self.spec[f"thermal_load-{self.c}"] = {
+            "element_id": element_id,
+            "delta_t": delta_t,
+            "alpha": alpha,
+            "delta_t_gradient": delta_t_gradient,
+            "h": h,
+        }
+
     def __str__(self) -> str:
         return f"Loadcase {self.name}:\n" + pprint.pformat(self.spec)
+
+
+def _clean(value: float) -> float:
+    """Zero for a value at rounding level (the decomposition of a load in an angle)"""
+    return 0.0 if abs(value) < 1e-12 else value
+
+
+def _add_loads(
+    target: "SystemElements", case: "SystemElements", base: "SystemElements"
+) -> None:
+    """Add the loads that a load case adds to the base system to the loads of `target`
+
+    The loads of a load case replace the loads of the base system at the same node or
+    element, so the added loads are those of the case minus those of the base system. The
+    values are the stored ones, which contain the load factor of the case and the
+    orientation of the y-axis.
+
+    Args:
+        target (SystemElements): System with the loads of the earlier load cases
+        case (SystemElements): Copy of the base system with the load case applied
+        base (SystemElements): The base system
+    """
+    for node_id, (fx, fy) in case.loads_point.items():
+        base_fx, base_fy = base.loads_point.get(node_id, (0.0, 0.0))
+        target_fx, target_fy = target.loads_point.get(node_id, (0.0, 0.0))
+        target.loads_point[node_id] = (
+            target_fx + fx - base_fx,
+            target_fy + fy - base_fy,
+        )
+
+    for node_id, moment in case.loads_moment.items():
+        target.loads_moment[node_id] = (
+            target.loads_moment.get(node_id, 0.0)
+            + moment
+            - base.loads_moment.get(node_id, 0.0)
+        )
+
+    for element_id, element in case.element_map.items():
+        base_element = base.element_map[element_id]
+        target_element = target.element_map[element_id]
+
+        # a dead load of the case is added to the self-weight of the element
+        added_dead_load = element.dead_load - base_element.dead_load
+        if added_dead_load != 0:
+            target_element.dead_load += added_dead_load
+            target.loads_dead_load.add(element_id)
+
+        # distributed loads, perpendicular and parallel to the element; the self-weight
+        # is part of both properties, so it is counted once, in the base system
+        # (a dead load of the case was added above, so it is not part of the added q-loads)
+        dead_perp = added_dead_load * math.cos(target_element.angle)
+        dead_par = -added_dead_load * math.sin(target_element.angle)
+        added_perp = [
+            _clean(a - b - dead_perp)
+            for a, b in zip(element.all_qp_load, base_element.all_qp_load)
+        ]
+        added_par = [
+            _clean(a - b - dead_par)
+            for a, b in zip(element.all_qn_load, base_element.all_qn_load)
+        ]
+        if any(value != 0 for value in added_perp + added_par):
+            if target_element.q_load == (0.0, 0.0) and target_element.q_perp_load == (
+                0.0,
+                0.0,
+            ):
+                # the first distributed load on this element: keep its decomposition
+                target_element.q_load = element.q_load
+                target_element.q_perp_load = element.q_perp_load
+                target_element.q_angle = element.q_angle
+                target_element.q_direction = element.q_direction
+            else:
+                angle = target_element.angle
+                dead_load = target_element.dead_load
+                total_perp = [
+                    a + b for a, b in zip(target_element.all_qp_load, added_perp)
+                ]
+                total_par = [
+                    a + b for a, b in zip(target_element.all_qn_load, added_par)
+                ]
+                # the sum, as a load in the direction of the element:
+                # all_qp_load = q_perp + g * cos, all_qn_load = -q - g * sin
+                target_element.q_angle = angle
+                target_element.q_direction = "angle"
+                # (values at rounding level, from the decomposition in an angle, are zero)
+                target_element.q_perp_load = (
+                    _clean(total_perp[0] - dead_load * math.cos(angle)),
+                    _clean(total_perp[1] - dead_load * math.cos(angle)),
+                )
+                target_element.q_load = (
+                    _clean(-(total_par[0] + dead_load * math.sin(angle))),
+                    _clean(-(total_par[1] + dead_load * math.sin(angle))),
+                )
+            target.loads_q[element_id] = case.loads_q.get(
+                element_id, target.loads_q.get(element_id, [(0.0, 0.0), (0.0, 0.0)])
+            )
+            target.plotter.max_q = max(target.plotter.max_q, case.plotter.max_q)
+
+    for element_id, (strain, curvature) in case.loads_temperature.items():
+        base_strain, base_curvature = base.loads_temperature.get(element_id, (0.0, 0.0))
+        target_strain, target_curvature = target.loads_temperature.get(
+            element_id, (0.0, 0.0)
+        )
+        temperature_load = (
+            target_strain + strain - base_strain,
+            target_curvature + curvature - base_curvature,
+        )
+        target.loads_temperature[element_id] = temperature_load
+        target.element_map[element_id].temperature_load = temperature_load
+
+    for node_id, displacements in case.loads_displacement.items():
+        base_displacements = base.loads_displacement.get(node_id, (None, None, None))
+        target_displacements = target.loads_displacement.get(
+            node_id, (None, None, None)
+        )
+        combined = []
+        for value, base_value, target_value in zip(
+            displacements, base_displacements, target_displacements
+        ):
+            if value is None:
+                combined.append(target_value)
+            else:
+                combined.append((target_value or 0.0) + value - (base_value or 0.0))
+        target.loads_displacement[node_id] = (combined[0], combined[1], combined[2])
 
 
 class LoadCombination:
@@ -144,7 +322,16 @@ class LoadCombination:
                                        buckling factor.
         :return: (ResultObject)
 
-        Development **kwargs:
+        The results of the load cases are the results of every load case on its own; the
+        loads of the system itself are part of each of them, and a load of the case at the same
+        node or element replaces them. The 'combination' is the result of one calculation of the
+        system with the loads of all the load cases, each multiplied by its factor, added to the
+        loads of the system itself, which count once. This is the same as the sum of
+        the load cases for a linear calculation, and the only correct one if the calculation is
+        not linear (second order effects, or non linear nodes without `force_linear`): the
+        combination then has its own buckling factor, for the combined loads.
+
+        Development **kwargs (passed to the solve of every load case and of the combination):
             :param naked: (bool) Whether or not to run the solve function without doing
                           post processing.
             :param discretize_kwargs: When doing a geometric non linear analysis you can reduce or
@@ -155,6 +342,7 @@ class LoadCombination:
         results = {}
         for lc, factor in self.spec.values():
             ss = copy.deepcopy(system)
+            ss._invalidate_solution()  # also when the system has been solved before
 
             ss.load_factor = factor
             ss.apply_load_case(lc)
@@ -163,16 +351,24 @@ class LoadCombination:
             )
             results[lc.name] = ss
 
-        ss_combination = copy.deepcopy(system)
-        ss_combination.post_processor.node_results_system()
-        for lc_ss in results.values():
-            for k in ss_combination.element_map:
-                ss_combination.element_map[k] = (
-                    ss_combination.element_map[k] + lc_ss.element_map[k]
-                )
-            for k in ss_combination.node_map:
-                ss_combination.node_map[k].add_results(lc_ss.node_map[k])
-        ss_combination.post_processor.reaction_forces()
-
-        results["combination"] = ss_combination
+        # the combination is one calculation with the loads of all the load cases: the
+        # results of non linear calculations can not be superposed, and for a linear one it
+        # is the same, while the loads of the system itself count once
+        ss_combined = copy.deepcopy(system)
+        ss_combined._invalidate_solution()
+        # every load case is applied to the system without its loads, so that the loads of the
+        # case are added to the loads of the system (in the result of a load case on its own
+        # they replace the loads of the system at the same node or element)
+        unloaded = copy.deepcopy(system)
+        unloaded._invalidate_solution()
+        unloaded.remove_loads(dead_load=True)
+        for lc, factor in self.spec.values():
+            ss = copy.deepcopy(unloaded)
+            ss.load_factor = factor
+            ss.apply_load_case(lc)
+            _add_loads(ss_combined, ss, unloaded)
+        ss_combined.solve(
+            force_linear, verbosity, max_iter, geometrical_non_linear, **kwargs
+        )
+        results["combination"] = ss_combined
         return results

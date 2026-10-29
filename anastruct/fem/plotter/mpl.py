@@ -358,7 +358,18 @@ class Plotter:
             axes_i (int, optional): Which set of axes to plot on (for multi-plot windows). Defaults to 0.
         """
         radius = PATCH_SIZE * max_val / 2
-        for node in self.system.internal_hinges:
+
+        # the internal hinges, and every element end that is released (hinge) by the
+        # spring of the element
+        hinge_nodes = {node.id: node for node in self.system.internal_hinges}
+        for element in self.system.element_map.values():
+            springs = element.springs or {}
+            if springs.get(1) == 0:
+                hinge_nodes[element.node_id1] = self.system.node_map[element.node_id1]
+            if springs.get(2) == 0:
+                hinge_nodes[element.node_id2] = self.system.node_map[element.node_id2]
+
+        for node in hinge_nodes.values():
             support_patch = mpatches.Circle(
                 (node.vertex.x, node.vertex.y),
                 radius,

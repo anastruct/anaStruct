@@ -47,6 +47,12 @@ Example
 
 We can use this method to query the reaction forces of the supports.
 
+The support nodes in :code:`ss.reaction_forces` also hold the displacements of the node (:code:`ux`, :code:`uy`,
+:code:`phi_z`). They are the real displacements, so they are not zero in a direction that the support leaves free (the
+rotation of a hinged support, or the free direction of a roller). :code:`reaction_forces[i].Fx` is the force of the
+support on the structure in the +x direction and :code:`reaction_forces[i].Fy` the same force counted positive
+downwards.
+
 .. code-block:: python
 
     print(ss.get_node_results_system(node_id=1)['Fy'], ss.get_node_results_system(node_id=-1)['Fy'])

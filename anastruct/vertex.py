@@ -1,12 +1,29 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Sequence, Union
+from typing import TYPE_CHECKING, Sequence, SupportsFloat, Union
 
 import numpy as np
 
 if TYPE_CHECKING:
     from anastruct._types import NumberLike, VertexLike
+
+
+def _snap(value: SupportsFloat) -> float:
+    """Round a coordinate to 12 significant digits
+
+    The coordinates are stored in double precision. Rounding to 12 digits removes the
+    rounding noise of computed coordinates (3.0000000000000004 for 3), so that points that
+    are the same location are the same Vertex (the nodes of a system are identified by the
+    Vertex), at any scale of the model. -0.0 becomes 0.0.
+
+    Args:
+        value (SupportsFloat): Coordinate
+
+    Returns:
+        float: The rounded coordinate
+    """
+    return float(f"{float(value):.12g}") + 0.0
 
 
 class Vertex:
@@ -27,18 +44,18 @@ class Vertex:
             y (Union[NumberLike, None], optional): Y coordinate. Defaults to None.
         """
         if isinstance(x, Vertex):
-            self.coordinates: np.ndarray = np.array(x.coordinates, dtype=np.float32)
+            self.coordinates: np.ndarray = np.array(x.coordinates, dtype=np.float64)
         elif (
             isinstance(x, (Sequence, np.ndarray))
             and len(x) == 2
             and isinstance(x[0], (float, int, np.number))
             and isinstance(x[1], (float, int, np.number))
         ):
-            self.coordinates = np.array([x[0], x[1]], dtype=np.float32)
+            self.coordinates = np.array([_snap(x[0]), _snap(x[1])], dtype=np.float64)
         elif isinstance(x, (float, int, np.number)) and isinstance(
             y, (float, int, np.number)
         ):
-            self.coordinates = np.array([x, y], dtype=np.float32)
+            self.coordinates = np.array([_snap(x), _snap(y)], dtype=np.float64)
         else:
             raise TypeError(
                 "Points must be convertable to a Vertex object: (x, y) or [x, y] or np.array([x, y]) or Vertex(x, y)"

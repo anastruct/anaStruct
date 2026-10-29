@@ -67,6 +67,27 @@ Example
 .. image:: img/loads/q-load.png
 
 
+thermal loads
+#############
+
+A uniform temperature change gives a free axial strain ``alpha * delta_t``, a temperature gradient over the section
+depth gives a free curvature ``alpha * delta_t_gradient / h``. A positive gradient means a warmer upper face of a
+horizontal element. Thermal loads can also be used in a :class:`.LoadCase`.
+
+.. automethod:: anastruct.fem.system.SystemElements.thermal_load
+
+Example
+.......
+
+.. code-block:: python
+
+    ss = SystemElements(EA=1e6, EI=1e4)
+    ss.add_element([[0, 0], [10, 0]])
+    ss.add_support_fixed([1, 2])
+    ss.thermal_load(element_id=1, delta_t=20, alpha=1.2e-5, delta_t_gradient=15, h=0.5)
+    ss.solve()
+
+
 Remove loads
 ------------
 

@@ -49,6 +49,8 @@ Got a question? Please ask on [gitter](https://gitter.im/anaStruct/lobby).
 * non-linear nodes :heavy_check_mark:
 * geometrical non linearity :heavy_check_mark:
 * load cases and load combinations :heavy_check_mark:
+* imposed displacements/rotations of supports (settlement) :heavy_check_mark:
+* thermal loads (uniform temperature change and temperature gradient) :heavy_check_mark:
 * generic type of section - rectangle and circle :heavy_check_mark:
 * EU, US, UK steel section database :heavy_check_mark:
 
