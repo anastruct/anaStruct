@@ -154,8 +154,8 @@ def describe_end_to_end_tests():
 
         def it_results_in_correct_solution(SS_7):
             sol = np.fromstring(
-                """0.          0.          0.          0.          0.23558645 -0.09665875
-            0.          0.          0.06433688""",
+                """0.          0.          0.          0.          0.25070634 -0.10443469
+            0.          0.          0.07363764""",
                 float,
                 sep=" ",
             )

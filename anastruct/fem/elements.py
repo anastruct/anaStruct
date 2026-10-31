@@ -362,11 +362,20 @@ def constitutive_matrix(
 
         # flexibility matrix c + springs on both sides:
         # [[ c11 + 1/k1, c12       ]
-        # [  c21      , c21 + 1/k2 ]]
-        if 1 in spring and spring[1] != 0:  # not hinge
-            matrix[1][1] = 1 / (1 / matrix[1][1] + 1 / spring[1])
-        if 2 in spring and spring[2] != 0:  # not hinge
-            matrix[2][2] = 1 / (1 / matrix[2][2] + 1 / spring[2])
+        # [  c21      , c22 + 1/k2 ]]
+        # The springs act in series with the bending flexibility, so the
+        # rotational block is inverted as a whole. Inverting each term on its
+        # own leaves an indefinite matrix for soft springs.
+        added = np.zeros(2)
+        for node in (1, 2):
+            if node in spring and spring[node] != 0:  # not hinge
+                added[node - 1] = 1 / spring[node]
+        if added.any():
+            block = matrix[1:, 1:]
+            active = np.flatnonzero(np.diag(block) != 0)
+            sub = block[np.ix_(active, active)]
+            flexibility = np.linalg.inv(sub) + np.diag(added[active])
+            block[np.ix_(active, active)] = np.linalg.inv(flexibility)
 
     return matrix
 
