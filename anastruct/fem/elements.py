@@ -365,10 +365,8 @@ def constitutive_matrix(
         # [  c21      , c21 + 1/k2 ]]
         if 1 in spring and spring[1] != 0:  # not hinge
             matrix[1][1] = 1 / (1 / matrix[1][1] + 1 / spring[1])
-            matrix[2][1] = 1 / (1 / matrix[2][1] + 1 / spring[1])
         if 2 in spring and spring[2] != 0:  # not hinge
-            matrix[2][1] = 1 / (1 / matrix[2][1] + 1 / spring[2])
-            matrix[1][2] = 1 / (1 / matrix[1][2] + 1 / spring[2])
+            matrix[2][2] = 1 / (1 / matrix[2][2] + 1 / spring[2])
 
     return matrix
 
