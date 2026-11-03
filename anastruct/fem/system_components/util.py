@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -14,12 +14,24 @@ if TYPE_CHECKING:
 def check_internal_hinges(system: "SystemElements", node_id: int) -> None:
     """Identify internal hinges, set their hinge status
 
+    The releases added by a previous call are undone first, so the result only depends on
+    the elements currently connected to the node, not on the order in which they were added.
+
     Args:
         system (SystemElements): System in which the node is located
         node_id (int): Id of the node in the system
     """
 
     node = system.node_map[node_id]
+
+    for el_id, released_end, original in system._hinge_releases.pop(node_id, []):
+        if el_id in system.element_map:
+            springs = system.element_map[el_id].springs
+            assert springs is not None
+            if original is None:
+                springs.pop(released_end)
+            else:
+                springs[released_end] = original
 
     hinges = []
     for el_id in node.elements:
@@ -34,26 +46,27 @@ def check_internal_hinges(system: "SystemElements", node_id: int) -> None:
 
     # If at least one element is connected
     # and no more than one element is rigidly connected
-    if (1 < len(hinges) <= 1 + sum(hinges)) or (len(hinges) == 1 and sum(hinges) == 1):
+    is_hinge = node_id in system._explicit_internal_hinges or (
+        (1 < len(hinges) <= 1 + sum(hinges)) or (len(hinges) == 1 and sum(hinges) == 1)
+    )
+
+    # Match by id, as the post-processing replaces the node objects
+    system.internal_hinges[:] = [n for n in system.internal_hinges if n.id != node_id]
+    node.hinge = is_hinge
+
+    if is_hinge:
         system.internal_hinges.append(node)
 
-    if node in system.internal_hinges:
-        node.hinge = True
-
         # If the elements aren't already all hinged, then set them to be
-        if len(hinges) - sum(hinges) >= 1:
-            for el_id in node.elements:
-                el = system.element_map[el_id]
-                assert el.springs is not None
-                if node_id == el.node_id1 and not (
-                    1 in el.springs and el.springs[1] == 0
-                ):
-                    el.springs.update({1: 0})
-                if node_id == el.node_id2 and not (
-                    2 in el.springs and el.springs[2] == 0
-                ):
-                    el.springs.update({2: 0})
-                system.element_map[el_id].springs = el.springs
+        releases = []
+        for el_id in node.elements:
+            el = system.element_map[el_id]
+            assert el.springs is not None
+            end: Literal[1, 2] = 1 if node_id == el.node_id1 else 2
+            if el.springs.get(end) != 0:
+                releases.append((el_id, end, el.springs.get(end)))
+                el.springs[end] = 0
+        system._hinge_releases[node_id] = releases
 
 
 def append_node_id(
@@ -105,8 +118,9 @@ def remove_node_id(
         system.supports_hinged.remove(node)
     if node in system.supports_rotational:
         system.supports_rotational.remove(node)
-    if node in system.internal_hinges:
-        system.internal_hinges.remove(node)
+    system.internal_hinges[:] = [n for n in system.internal_hinges if n.id != node_id]
+    system._explicit_internal_hinges.discard(node_id)
+    system._hinge_releases.pop(node_id, None)
     if node in system.supports_roll:
         ind = system.supports_roll.index(node)
         system.supports_roll.remove(node)
