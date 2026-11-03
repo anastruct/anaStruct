@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from anastruct import SystemElements
+from anastruct.fem.system_components.solver import det_linear_buckling
 
 EI = 200e6 * 9.05e-6  # kNm²
 EA = 200e6 * 2300e-6  # kN
@@ -79,3 +80,12 @@ def test_no_axial_force_matches_first_order():
     second.solve(geometrical_non_linear=True)
     assert _max_moment(second) == pytest.approx(_max_moment(first), rel=1e-12)
     assert second.buckling_factor == math.inf
+
+
+@pytest.mark.parametrize("vertical", [False, True], ids=["horizontal", "vertical"])
+def test_buckling_factor_below_one_is_reported(vertical):
+    """Beyond the buckling load, k0 + kg is no longer positive definite.
+    The buckling factor only needs that matrix, so it must still be found."""
+    assert det_linear_buckling(
+        _member(-1.2 * N_CR, vertical=vertical)
+    ) == pytest.approx(1 / 1.2, rel=1e-3)

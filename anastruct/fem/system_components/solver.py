@@ -107,7 +107,9 @@ def det_linear_buckling(system: "SystemElements") -> float:
         el.compile_geometric_non_linear_stiffness_matrix()
         el.reset()
 
-    system.solve()
+    # Only the assembled k0 + kg is needed. Beyond the buckling load it is no
+    # longer positive definite, and a full solve would reject it as unstable.
+    system.solve(naked=True)
     kg = system.reduced_system_matrix - k0
 
     # (k0 + λ kg) x = 0  ⇔  k0⁻¹ kg x = μ x  with  λ = −1/μ. kg is singular
