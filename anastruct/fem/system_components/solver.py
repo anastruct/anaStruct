@@ -109,15 +109,13 @@ def det_linear_buckling(system: "SystemElements") -> float:
 
     system.solve()
     kg = system.reduced_system_matrix - k0
-    # solve (k -λkg)x = 0
 
-    # The following two lines are equivalent to the cleaner
-    # `scipy.linalg.eigvals(k0, kg)``, but doing this in numpy
-    # instead allows us to drop the very heavy scipy dependency
-    # that was needed for no other reason than this one line.
-    invkg_k0 = np.linalg.inv(kg) * k0
-    eigenvalues = np.abs(np.linalg.eigvals(invkg_k0))
-    return float(np.min(eigenvalues))
+    # (k0 + λ kg) x = 0  ⇔  k0⁻¹ kg x = μ x  with  λ = −1/μ. kg is singular
+    # (no axial terms), so it is not inverted. No μ < 0 means no compression.
+    mu = np.linalg.eigvals(np.linalg.solve(k0, kg)).real
+    if mu.min() > -1e-12:
+        return float("inf")
+    return float(-1 / mu.min())
 
 
 def geometrically_non_linear(
