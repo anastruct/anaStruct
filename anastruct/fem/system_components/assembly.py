@@ -288,8 +288,9 @@ def process_conditions(system: "SystemElements") -> None:
     # remove the unsolvable values from the matrix and vectors
     assert system.shape_system_matrix is not None
     assert system.system_displacement_vector is not None
+    assert system._restrained_dofs is not None
     for i in range(system.shape_system_matrix):
-        if system.system_displacement_vector[i] == 0:
+        if system._restrained_dofs[i]:
             indexes.append(i)
         else:
             system._remainder_indexes.append(i)
@@ -361,3 +362,8 @@ def process_supports(system: "SystemElements") -> None:
 
             el.compile_kinematic_matrix()
             el.compile_stiffness_matrix()
+
+    # After a solve the displacement vector holds the solution, in which a free
+    # DOF can also be exactly 0, so remember which DOFs are restrained.
+    assert system.system_displacement_vector is not None
+    system._restrained_dofs = system.system_displacement_vector == 0

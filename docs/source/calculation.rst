@@ -25,3 +25,7 @@ to pass a `discretize_kwargs` dictionary.
 With this dictionary you can set the amount of discretization elements
 generated during the geometrical non linear calculation. This calculation is an approximation and gets more accurate
 with more discretization elements.
+
+Note that `discretize_kwargs` only applies to the determination of the buckling factor. The second order forces and
+displacements are calculated with the elements as modelled, so divide a member into several elements (e.g. with
+`add_multiple_elements`) to include the second order effects within the member.
