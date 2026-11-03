@@ -128,6 +128,12 @@ class SystemElements:
         self.supports_hinged: List[Node] = []
         self.supports_rotational: List[Node] = []
         self.internal_hinges: List[Node] = []
+        # node ids passed to add_internal_hinge(), and the releases that check_internal_hinges()
+        # added per node as (element id, element end, original spring)
+        self._explicit_internal_hinges: Set[int] = set()
+        self._hinge_releases: Dict[
+            int, List[Tuple[int, Literal[1, 2], Optional[float]]]
+        ] = {}
         self.supports_roll: List[Node] = []
         self.supports_spring_x: List[Tuple[Node, bool]] = []
         self.supports_spring_y: List[Tuple[Node, bool]] = []
@@ -388,8 +394,8 @@ class SystemElements:
 
         if mp is None:
             mp = {}
-        if spring is None:
-            spring = {}
+        # Copy, as hinge releases are added to the springs and a dict may be shared by elements
+        spring = {} if spring is None else dict(spring)
 
         element_type = kwargs.get("element_type", "general")
 
@@ -1062,7 +1068,9 @@ class SystemElements:
             id_ = _negative_index_to_id(id_, self.node_map.keys())
 
             # add the support to the support list for the plotter
-            self.internal_hinges.append(self.node_map[id_])
+            if not any(node.id == id_ for node in self.internal_hinges):
+                self.internal_hinges.append(self.node_map[id_])
+            self._explicit_internal_hinges.add(id_)
 
     def add_support_roll(
         self,

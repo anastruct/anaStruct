@@ -577,6 +577,56 @@ def describe_end_to_end_tests():
                 system.get_element_results(2)["Mmax"]
             )
 
+    def describe_internal_hinge_independent_of_element_order():
+        # Test bug fix for a joint with only one of three elements released being treated as
+        # an internal hinge, depending on the order in which the elements are added (#464)
+
+        release = {1: 0}
+        elements = {
+            "left": ([[0, 4], [4, 4]], None),
+            "right": ([[4, 4], [8, 4]], release),
+            "column": ([[4, 4], [4, 0]], None),
+        }
+
+        def _build(order):
+            system = SystemElements()
+            ids = {
+                name: system.add_element(elements[name][0], spring=elements[name][1])
+                for name in order
+            }
+            for location in ([0, 4], [8, 4], [4, 0]):
+                system.add_support_fixed(system.find_node_id(location))
+            system.q_load(q=-10, element_id=[ids["left"], ids["right"]])
+            system.solve()
+            return system, ids
+
+        systems = [
+            _build(order)
+            for order in (
+                ["left", "column", "right"],
+                ["left", "right", "column"],
+                ["right", "left", "column"],
+            )
+        ]
+
+        def it_does_not_create_an_internal_hinge():
+            for system, ids in systems:
+                assert system.internal_hinges == []
+                assert system.element_map[ids["left"]].springs == {}
+                assert system.element_map[ids["column"]].springs == {}
+            assert release == {1: 0}
+
+        def it_results_in_the_same_moments_for_any_element_order():
+            moments = []
+            for system, ids in systems:
+                node_id = system.find_node_id([4, 4])
+                m_left = system.element_map[ids["left"]].node_map[node_id].Tz
+                m_column = system.element_map[ids["column"]].node_map[node_id].Tz
+                assert m_left == approx(-m_column)
+                moments.append(m_left)
+            assert moments[0] != approx(0)
+            assert moments == approx([moments[0]] * len(moments))
+
     def context_q_and_q_perp_loads():
         # Test addition of simultaneous q and q_perp loads
 
