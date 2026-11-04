@@ -345,10 +345,17 @@ def constitutive_matrix(
         [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
     )
 
-    if node_1_hinge or (spring is not None and 1 in spring and spring[1] == 0):
+    hinge_1 = node_1_hinge or (spring is not None and 1 in spring and spring[1] == 0)
+    hinge_2 = node_2_hinge or (spring is not None and 2 in spring and spring[2] == 0)
+    # Releasing one end condenses out its rotation: the other end of a
+    # pinned-fixed member has rotational stiffness 3EI/l, not 4EI/l.
+    if hinge_1 and not hinge_2:
+        matrix[2][2] = 3 * EI / l
+    if hinge_2 and not hinge_1:
+        matrix[1][1] = 3 * EI / l
+    if hinge_1:
         matrix[1][1] = matrix[1][2] = matrix[2][1] = 0
-
-    if node_2_hinge or (spring is not None and 2 in spring and spring[2] == 0):
+    if hinge_2:
         matrix[1][2] = matrix[2][1] = matrix[2][2] = 0
 
     if spring is not None:
@@ -362,11 +369,20 @@ def constitutive_matrix(
 
         # flexibility matrix c + springs on both sides:
         # [[ c11 + 1/k1, c12       ]
-        # [  c21      , c21 + 1/k2 ]]
-        if 1 in spring and spring[1] != 0:  # not hinge
-            matrix[1][1] = 1 / (1 / matrix[1][1] + 1 / spring[1])
-        if 2 in spring and spring[2] != 0:  # not hinge
-            matrix[2][2] = 1 / (1 / matrix[2][2] + 1 / spring[2])
+        # [  c21      , c22 + 1/k2 ]]
+        # The springs act in series with the bending flexibility, so the
+        # rotational block is inverted as a whole. Inverting each term on its
+        # own leaves an indefinite matrix for soft springs.
+        added = np.zeros(2)
+        for node in (1, 2):
+            if node in spring and spring[node] != 0:  # not hinge
+                added[node - 1] = 1 / spring[node]
+        if added.any():
+            block = matrix[1:, 1:]
+            active = np.flatnonzero(np.diag(block) != 0)
+            sub = block[np.ix_(active, active)]
+            flexibility = np.linalg.inv(sub) + np.diag(added[active])
+            block[np.ix_(active, active)] = np.linalg.inv(flexibility)
 
     return matrix
 
