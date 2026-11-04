@@ -41,11 +41,32 @@ class TestConstitutiveMatrixSprings(unittest.TestCase):
         matrix = constitutive_matrix(1e9, EI, L, {2: 2000.0}, True, False)
         self.assertEqual(matrix[1][1], 0)
         self.assertEqual(matrix[1][2], 0)
-        np.testing.assert_allclose(matrix[2][2], 1 / (L / (4 * EI) + 1 / 2000.0))
+        np.testing.assert_allclose(matrix[2][2], 1 / (L / (3 * EI) + 1 / 2000.0))
 
 
 class TestRotationalSpringStructures(unittest.TestCase):
     P = 10.0
+
+    def test_zero_spring_at_pinned_support_changes_nothing(self):
+        # A joint moment splits by member end stiffness: 4EI/l for the
+        # member with a fixed far end, 3EI/l for the one with a pinned far end.
+        # Releasing the end that already sits on a pin must not change that.
+        moments = []
+        for spring in (None, {2: 0}):
+            ss = SystemElements(EI=1000, EA=1e9)
+            ss.add_element([[0, 0], [4, 0]])
+            ss.add_element([[4, 0], [8, 0]], spring=spring)
+            ss.add_support_fixed(1)
+            ss.add_support_roll(2, direction="x")
+            ss.add_support_hinged(3)
+            ss.moment_load(2, Ty=10)
+            ss.solve()
+            moments.append(
+                (ss.element_map[1].node_map[2].Tz, ss.element_map[2].node_map[2].Tz)
+            )
+        expected = (10 * 4 / 7, 10 * 3 / 7)
+        for pair in moments:
+            np.testing.assert_allclose(pair, expected)
 
     def test_cantilever_with_base_spring_matches_closed_form(self):
         for k in (2000.0, 20000.0, 2e5):

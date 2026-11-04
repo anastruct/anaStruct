@@ -345,10 +345,17 @@ def constitutive_matrix(
         [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
     )
 
-    if node_1_hinge or (spring is not None and 1 in spring and spring[1] == 0):
+    hinge_1 = node_1_hinge or (spring is not None and 1 in spring and spring[1] == 0)
+    hinge_2 = node_2_hinge or (spring is not None and 2 in spring and spring[2] == 0)
+    # Releasing one end condenses out its rotation: the other end of a
+    # pinned-fixed member has rotational stiffness 3EI/l, not 4EI/l.
+    if hinge_1 and not hinge_2:
+        matrix[2][2] = 3 * EI / l
+    if hinge_2 and not hinge_1:
+        matrix[1][1] = 3 * EI / l
+    if hinge_1:
         matrix[1][1] = matrix[1][2] = matrix[2][1] = 0
-
-    if node_2_hinge or (spring is not None and 2 in spring and spring[2] == 0):
+    if hinge_2:
         matrix[1][2] = matrix[2][1] = matrix[2][2] = 0
 
     if spring is not None:
