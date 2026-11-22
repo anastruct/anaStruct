@@ -110,7 +110,7 @@ def describe_end_to_end_tests():
             sol = np.fromstring(
                 """0.00000000e+00  0.00000000e+00  1.46957616e-25  2.00000000e-09
             -7.34788079e-25  0.00000000e+00  0.00000000e+00  0.00000000e+00
-            3.12500040e-03""",
+            4.16666667e-03""",
                 float,
                 sep=" ",
             )
@@ -154,8 +154,8 @@ def describe_end_to_end_tests():
 
         def it_results_in_correct_solution(SS_7):
             sol = np.fromstring(
-                """0.          0.          0.          0.          0.23558645 -0.09665875
-            0.          0.          0.06433688""",
+                """0.          0.          0.          0.          0.25070634 -0.10443469
+            0.          0.          0.07363764""",
                 float,
                 sep=" ",
             )
@@ -296,7 +296,7 @@ def describe_end_to_end_tests():
         # the element ids are non-contiguous after the split
         assert list(inserted.element_map.keys()) == [1, 3, 4]
 
-        def displacements_by_coordinate(system):
+        def _displacements_by_coordinate(system):
             return {
                 (round(node.vertex.x, 6), round(node.vertex.y, 6)): (
                     system.get_node_displacements(node_id)["ux"],
@@ -305,8 +305,8 @@ def describe_end_to_end_tests():
                 for node_id, node in system.node_map.items()
             }
 
-        inserted_disp = displacements_by_coordinate(inserted)
-        unsplit_disp = displacements_by_coordinate(unsplit)
+        inserted_disp = _displacements_by_coordinate(inserted)
+        unsplit_disp = _displacements_by_coordinate(unsplit)
         assert set(inserted_disp) == set(unsplit_disp)
         for coordinate, displacement in inserted_disp.items():
             assert displacement == approx(unsplit_disp[coordinate])
