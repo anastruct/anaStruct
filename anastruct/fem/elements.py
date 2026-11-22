@@ -408,9 +408,14 @@ def stiffness_matrix(
 def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.ndarray:
     """Generate the geometric stiffness matrix of an element
 
+    The local matrix is transformed to global coordinates as Tᵀ kg T, with
+    each node's rows of T built from that node's own angle (as in
+    ``kinematic_matrix``). The angles differ when one end sits on an inclined
+    roller, which rotates only that node's degrees of freedom.
+
     Args:
         l (float): Length
-        N (float): Axial force
+        N (float): Axial force (tension positive)
         a1 (float): Angle of the element at node 1
         a2 (float): Angle of the element at node 2
 
@@ -421,61 +426,29 @@ def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.n
     s1 = sin(a1)
     c2 = cos(a2)
     s2 = sin(a2)
+    # Local matrix on (v1, phi1, v2, phi2): H. P. Gavin, "Geometric Stiffness
+    # Effects in 2D and 3D Frames", eq. (16).
     # http://people.duke.edu/~hpgavin/cee421/frame-finite-def.pdf
-    return (  # type: ignore
+    kg_local = (
         N
         / l
         * np.array(
             [
-                [
-                    6 / 5 * s1**2,
-                    -6 / 5 * s1 * c1,
-                    -l / 10 * s1,
-                    -6 / 5 * s2**2,
-                    6 / 5 * s2 * c2,
-                    -l / 10 * s2,
-                ],
-                [
-                    -6 / 5 * s1 * c1,
-                    6 / 5 * c1**2,
-                    l / 10 * c1,
-                    6 / 5 * s2 * c2,
-                    -6 / 5 * c2**2,
-                    l / 10 * c2,
-                ],
-                [
-                    -l / 10 * s1,
-                    l / 10 * c1,
-                    2 * l**2 / 15,
-                    l / 10 * s2,
-                    -l / 10 * c2,
-                    -(l**2) / 30,
-                ],
-                [
-                    -6 / 5 * s1**2,
-                    6 / 5 * s1 * c1,
-                    l / 10 * s1,
-                    6 / 5 * s2**2,
-                    -6 / 5 * s2 * c2,
-                    l / 10 * s2,
-                ],
-                [
-                    6 / 5 * s1 * c1,
-                    -6 / 5 * c1**2,
-                    -l / 10 * c1,
-                    -6 / 5 * s2 * c2,
-                    6 / 5 * c2**2,
-                    -l / 10 * c2,
-                ],
-                [
-                    -l / 10 * s1,
-                    l / 10 * c1,
-                    -(l**2) / 30,
-                    l / 10 * s2,
-                    -l / 10 * c2,
-                    2 * l**2 / 15,
-                ],
+                [6 / 5, l / 10, -6 / 5, l / 10],
+                [l / 10, 2 * l**2 / 15, -l / 10, -(l**2) / 30],
+                [-6 / 5, -l / 10, 6 / 5, -l / 10],
+                [l / 10, -(l**2) / 30, -l / 10, 2 * l**2 / 15],
             ]
         )
-        * np.outer([1, -1, 1, 1, -1, 1], [1, -1, 1, 1, -1, 1])
-    )  # conversion from coordinate system: flip y in rows and columns
+    )
+    # Global (x1, y1, phi1, x2, y2, phi2) to local (v1, phi1, v2, phi2).
+    # anaStruct's y points the opposite way to Gavin's, hence the signs on v.
+    transform = np.array(
+        [
+            [-s1, -c1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 0, 0, -s2, -c2, 0],
+            [0, 0, 0, 0, 0, 1],
+        ]
+    )
+    return transform.T @ kg_local @ transform  # type: ignore

@@ -350,6 +350,74 @@ def describe_analytical_validation_tests():
                 -0.945, abs=5e-4
             )
 
+    def context_two_span_beam_column_on_inclined_roller_validation():
+        # Second-order (geometrically non-linear) analysis of a vertical column
+        # continuous over two equal spans l: pinned at the base, laterally
+        # restrained at mid-height and at the top, uniform lateral load q and
+        # axial compression P applied at the top. The mid-height support is
+        # modelled as a plain roller or as an inclined roller, which rotates the
+        # mid node's DOFs so the adjacent elements have a1 != a2. The results
+        # must not depend on how that support is modelled.
+        #
+        # By symmetry the slope over the middle support is zero, so its moment
+        # follows from the simply supported beam-column end slopes (Timoshenko &
+        # Gere, Theory of Elastic Stability, 2nd ed., Ch. 1), with u = l/2 * sqrt(P / EI):
+        #   UDL:            theta = q l^3 / (24 EI) * chi(u),  chi(u) = 3 (tan u - u) / u^3
+        #   end moment M:   theta = M l / (3 EI) * psi(u),     psi(u) = 3 / (2u) * (1 / (2u) - 1 / tan 2u)
+        #   so              M = q l^2 / 8 * chi(u) / psi(u)
+        # The lowest buckling mode is antisymmetric, each span buckling as a
+        # pin-ended column: P_cr = pi^2 EI / l^2.
+
+        q = 5  # kN/m
+        l = 6  # m
+        EI = 1810  # kN.m^2
+        EA = 460_000  # kN
+        P_cr = np.pi**2 * EI / l**2
+        n = 20  # elements per span
+
+        def _solve(roll_angle, ratio):
+            system = SystemElements(EI=EI, EA=EA)
+            ids = system.add_multiple_elements([[0, 0], [0, l]], n)
+            mid = system.id_last_node
+            ids += system.add_multiple_elements([[0, l], [0, 2 * l]], n)
+            system.add_support_hinged(1)
+            if roll_angle is None:
+                system.add_support_roll(mid, direction="y")
+            else:
+                system.add_support_roll(mid, angle=roll_angle)
+            system.add_support_roll(system.id_last_node, direction="y")
+            system.q_load(q, element_id=ids)
+            system.point_load(system.id_last_node, Fy=-ratio * P_cr)
+            system.solve(geometrical_non_linear=True)
+            return system
+
+        def _support_moment(ratio):
+            u = l / 2 * np.sqrt(ratio * P_cr / EI)
+            chi = 3 * (np.tan(u) - u) / u**3
+            psi = 3 / (2 * u) * (1 / (2 * u) - 1 / np.tan(2 * u))
+            return q * l**2 / 8 * chi / psi
+
+        @mark.parametrize("roll_angle", [None, 90, -90])
+        @mark.parametrize("ratio", [0.3, 0.6])
+        def it_results_in_correct_second_order_moment(roll_angle, ratio):
+            system = _solve(roll_angle, ratio)
+            M = max(
+                np.max(np.abs(r["M"])) for r in system.get_element_results(verbose=True)
+            )
+            assert M == approx(_support_moment(ratio), rel=1e-5)
+
+        @mark.parametrize("roll_angle", [None, 90, -90])
+        @mark.parametrize("ratio", [0.3, 0.6])
+        def it_results_in_correct_buckling_factor(roll_angle, ratio):
+            system = _solve(roll_angle, ratio)
+            assert system.buckling_factor == approx(1 / ratio, rel=1e-5)
+
+        @mark.parametrize("roll_angle", [None, 90, -90])
+        def it_results_in_uniform_axial_force(roll_angle):
+            system = _solve(roll_angle, 0.6)
+            for element in system.element_map.values():
+                assert element.N_1 == approx(-0.6 * P_cr, rel=1e-9)
+
     def context_remove_element():
         # Removing an element from a propped beam
 
