@@ -422,10 +422,6 @@ def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.n
     Returns:
         np.ndarray: Geometric stiffness matrix of the element
     """
-    c1 = cos(a1)
-    s1 = sin(a1)
-    c2 = cos(a2)
-    s2 = sin(a2)
     # Local matrix on (v1, phi1, v2, phi2): H. P. Gavin, "Geometric Stiffness
     # Effects in 2D and 3D Frames", eq. (16).
     # http://people.duke.edu/~hpgavin/cee421/frame-finite-def.pdf
@@ -445,9 +441,9 @@ def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.n
     # anaStruct's y points the opposite way to Gavin's, hence the signs on v.
     transform = np.array(
         [
-            [-s1, -c1, 0, 0, 0, 0],
+            [-sin(a1), -cos(a1), 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0],
-            [0, 0, 0, -s2, -c2, 0],
+            [0, 0, 0, -sin(a2), -cos(a2), 0],
             [0, 0, 0, 0, 0, 1],
         ]
     )
