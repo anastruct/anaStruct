@@ -1,5 +1,5 @@
 import numpy as np
-from pytest import approx, raises
+from pytest import approx, mark, raises
 
 from anastruct import LoadCase, LoadCombination, SystemElements
 
@@ -279,6 +279,75 @@ def describe_analytical_validation_tests():
         def it_results_in_correct_deflections():
             assert system.get_node_results_system(1)["uy"] == approx(
                 -w * l**4 / (8 * EI)
+            )
+
+    def context_semi_rigid_beam_UDL_validation():
+        # Beams with rotational spring (semi-rigid) end connections and UDL.
+        # Validated against N. Kotlyar, "Formulas for Beams with Semi-rigid
+        # Connections", AISC Engineering Journal, Vol. 33, No. 4 (1996), pp. 142-146.
+        # Kotlyar uses i = EI / l and mu = i / C, where C is the rotational stiffness
+        # of the connection. Both element ends are restrained (a released end sits on
+        # a hinged support), so the support reactions are the fixed-end forces.
+
+        w = 10  # kN/m
+        l = 4  # m
+        EI = 5000  # kN.m^2
+        EA = 5e6  # kN
+
+        def _solve(spring, EI=EI, l=l, w=w):
+            system = SystemElements(EI=EI, EA=EA)
+            system.add_element([[0, 0], [l, 0]], spring=spring)
+            system.add_support_fixed(1)
+            if spring.get(2) == 0:
+                system.add_support_hinged(2)
+            else:
+                system.add_support_fixed(2)
+            system.q_load(w, element_id=1)
+            system.solve()
+            return system
+
+        @mark.parametrize("mu", [0.01, 0.1, 0.5, 1.0, 5.0])
+        def it_results_in_correct_reactions_with_springs_at_both_ends(mu):
+            # Kotlyar Table 2, row 1: M_A = M_B = w * l^2 / 12 * 1 / (2 * mu + 1)
+            C = EI / l / mu
+            system = _solve({1: C, 2: C})
+            M = w * l**2 / 12 / (2 * mu + 1)
+            assert system.get_node_results_system(1)["Tz"] == approx(M)
+            assert system.get_node_results_system(2)["Tz"] == approx(-M)
+            assert system.get_node_results_system(1)["Fy"] == approx(w * l / 2)
+            assert system.get_node_results_system(2)["Fy"] == approx(w * l / 2)
+
+        @mark.parametrize("mu", [0.01, 0.1, 0.5, 1.0, 5.0])
+        def it_results_in_correct_reactions_with_spring_and_pin(mu):
+            # Kotlyar Table 2, row 3: M_A = w * l^2 / 8 * 1 / (3 * mu + 1), B pinned
+            C = EI / l / mu
+            system = _solve({1: C, 2: 0})
+            M = w * l**2 / 8 / (3 * mu + 1)
+            assert system.get_node_results_system(1)["Tz"] == approx(M)
+            assert system.get_node_results_system(2)["Tz"] == approx(0, abs=1e-9)
+            assert system.get_node_results_system(1)["Fy"] == approx(w * l / 2 + M / l)
+            assert system.get_node_results_system(2)["Fy"] == approx(w * l / 2 - M / l)
+
+        def it_results_in_fixed_end_moments_for_rigid_ends():
+            # mu = 0: w * l^2 / 12 with both ends rigid, w * l^2 / 8 with B pinned
+            system = _solve({})
+            assert system.get_node_results_system(1)["Tz"] == approx(w * l**2 / 12)
+            assert system.get_node_results_system(2)["Tz"] == approx(-w * l**2 / 12)
+            system = _solve({2: 0})
+            assert system.get_node_results_system(1)["Tz"] == approx(w * l**2 / 8)
+
+        def it_matches_the_worked_example():
+            # Kotlyar's example: W18x50 beam, I = 800 in^4, l = 240 in, E = 29,000 ksi,
+            # bolted flange-plate connection C = 3,347,325 kip-in/rad, so mu = 0.0288
+            # and M_A = M_B = 0.945 * w * l^2 / 12.
+            EI_ex, l_ex, w_ex, C = 29000 * 800, 240, 0.1, 3347325
+            system = _solve({1: C, 2: C}, EI=EI_ex, l=l_ex, w=w_ex)
+            M_fixed = w_ex * l_ex**2 / 12
+            assert system.get_node_results_system(1)["Tz"] / M_fixed == approx(
+                0.945, abs=5e-4
+            )
+            assert system.get_node_results_system(2)["Tz"] / M_fixed == approx(
+                -0.945, abs=5e-4
             )
 
     def context_remove_element():

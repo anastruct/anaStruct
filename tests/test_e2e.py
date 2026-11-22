@@ -296,7 +296,7 @@ def describe_end_to_end_tests():
         # the element ids are non-contiguous after the split
         assert list(inserted.element_map.keys()) == [1, 3, 4]
 
-        def displacements_by_coordinate(system):
+        def _displacements_by_coordinate(system):
             return {
                 (round(node.vertex.x, 6), round(node.vertex.y, 6)): (
                     system.get_node_displacements(node_id)["ux"],
@@ -305,8 +305,8 @@ def describe_end_to_end_tests():
                 for node_id, node in system.node_map.items()
             }
 
-        inserted_disp = displacements_by_coordinate(inserted)
-        unsplit_disp = displacements_by_coordinate(unsplit)
+        inserted_disp = _displacements_by_coordinate(inserted)
+        unsplit_disp = _displacements_by_coordinate(unsplit)
         assert set(inserted_disp) == set(unsplit_disp)
         for coordinate, displacement in inserted_disp.items():
             assert displacement == approx(unsplit_disp[coordinate])
