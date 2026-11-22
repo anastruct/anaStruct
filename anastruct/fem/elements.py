@@ -456,7 +456,7 @@ def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.n
                     6 / 5 * s1 * c1,
                     l / 10 * s1,
                     6 / 5 * s2**2,
-                    -6 / 5 * s1 * c2,
+                    -6 / 5 * s2 * c2,
                     l / 10 * s2,
                 ],
                 [
@@ -477,5 +477,5 @@ def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.n
                 ],
             ]
         )
-        * np.array([1, -1, 1, 1, -1, 1])
-    )  # conversion from coordinate system
+        * np.outer([1, -1, 1, 1, -1, 1], [1, -1, 1, 1, -1, 1])
+    )  # conversion from coordinate system: flip y in rows and columns
