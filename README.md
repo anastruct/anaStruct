@@ -113,11 +113,11 @@ ss.show_bending_moment()
 
 ```
 
-![](doc/source/img/examples/tower_bridge_struct.png)
+![](docs/source/img/examples/tower_bridge_struct.png)
 
-![](doc/source/img/examples/tower_bridge_displa.png)
+![](docs/source/img/examples/tower_bridge_displa.png)
 
-![](doc/source/img/examples/tower_bridge_moment.png)
+![](docs/source/img/examples/tower_bridge_moment.png)
 
 
 ```python

@@ -1,5 +1,5 @@
 import math
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Literal, Tuple
 
 import numpy as np
 
@@ -9,6 +9,38 @@ if TYPE_CHECKING:
     from anastruct._types import AxisNumber
     from anastruct.fem.elements import Element
     from anastruct.fem.system import SystemElements
+
+# det_moment/det_shear need a finite stiffness for a rigid element end. At this
+# multiple of the member's own EI/l, the fixed-end forces differ from those of a
+# truly fixed end by about 1e-12 (relative), and the products inside det_moment
+# stay far from float overflow.
+RIGID_END_STIFFNESS_FACTOR = 1e12
+
+
+def end_rotational_stiffness(element: "Element", node: Literal[1, 2]) -> float:
+    """Rotational stiffness of the connection between an element end and its node
+
+    The fixed-end (primary) forces of a distributed load are those of the element
+    with both nodes fully restrained, so the element end only rotates as much as
+    the connection to its node allows: not at all for a rigid connection, by
+    M / k for a rotational spring, and freely for a hinge.
+
+    Args:
+        element (Element): Element to evaluate
+        node (Literal[1, 2]): Element end (1 or 2)
+
+    Returns:
+        float: 0 for a hinge, the spring stiffness for a spring, and an effectively
+            rigid stiffness otherwise
+    """
+    rigid = RIGID_END_STIFFNESS_FACTOR * element.EI / element.l
+    hinged = element.node_1.hinge if node == 1 else element.node_2.hinge
+    springs = element.springs or {}
+    if hinged or springs.get(node) == 0:
+        return 0.0
+    if node in springs:
+        return min(springs[node], rigid)
+    return rigid
 
 
 def set_force_vector(
@@ -87,8 +119,8 @@ def apply_perpendicular_q_load(system: "SystemElements") -> None:
         if q_perpendicular == 0 and qi_perpendicular == 0:
             continue
 
-        kl = element.constitutive_matrix[1][1] * 1e6
-        kr = element.constitutive_matrix[2][2] * 1e6
+        kl = end_rotational_stiffness(element, 1)
+        kr = end_rotational_stiffness(element, 2)
 
         # minus because of systems positive rotation
         left_moment = det_moment(
