@@ -170,6 +170,7 @@ class SystemElements:
         self.system_matrix: Optional[np.ndarray] = None
         self.system_force_vector: Optional[np.ndarray] = None
         self.system_displacement_vector: Optional[np.ndarray] = None
+        self._restrained_dofs: Optional[np.ndarray] = None
         self.shape_system_matrix: Optional[int] = (
             None  # actually is the size of the square system matrix
         )
@@ -2226,6 +2227,7 @@ class SystemElements:
             EA=self.EA, EI=self.EI, load_factor=self.load_factor, mesh=self.plotter.mesh
         )
 
+        sub_element_ids: Dict[int, List[int]] = {}
         for element in self.element_map.values():
             g = self.element_map[element.id].dead_load
             mp = (
@@ -2234,16 +2236,19 @@ class SystemElements:
                 else {}
             )
 
+            sub_element_ids[element.id] = []
             el_v_range = vertex_range(element.vertex_1, element.vertex_2, n)
             for last_v, v in zip(el_v_range, el_v_range[1:]):
                 loc = [last_v, v]
-                ss.add_element(
-                    loc,
-                    EA=element.EA,
-                    EI=element.EI,
-                    g=g,
-                    mp=mp,
-                    spring=element.springs,
+                sub_element_ids[element.id].append(
+                    ss.add_element(
+                        loc,
+                        EA=element.EA,
+                        EI=element.EI,
+                        g=g,
+                        mp=mp,
+                        spring=element.springs,
+                    )
                 )
                 last_v = v
 
@@ -2271,13 +2276,23 @@ class SystemElements:
 
         for node_id, forces_moment in self.loads_moment.items():
             ss.moment_load((node_id - 1) * n + 1, forces_moment / self.load_factor)
-        for element_id, forces_q in self.loads_q.items():
-            ss.q_load(
-                q=[i[1] / self.orientation_cs / self.load_factor for i in forces_q],
-                element_id=element_id,
-                direction="y",
-                q_perp=[i[0] / self.load_factor for i in forces_q],
+        for element_id in self.loads_q:
+            element = self.element_map[element_id]
+            assert element.q_angle is not None
+            q_start, q_end = element.q_load
+            q_perp_start, q_perp_end = element.q_perp_load
+            # q varies linearly along the element; split it over the sub-elements
+            q = np.linspace(q_start, q_end, n + 1) / (
+                self.orientation_cs * self.load_factor
             )
+            q_perp = np.linspace(q_perp_start, q_perp_end, n + 1) / self.load_factor
+            for i, sub_id in enumerate(sub_element_ids[element_id]):
+                ss.q_load(
+                    q=q[i : i + 2].tolist(),
+                    element_id=sub_id,
+                    rotation=np.degrees(element.q_angle),
+                    q_perp=q_perp[i : i + 2].tolist(),
+                )
 
         self.__dict__ = ss.__dict__.copy()
 
