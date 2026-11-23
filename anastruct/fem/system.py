@@ -128,12 +128,8 @@ class SystemElements:
         self.supports_hinged: List[Node] = []
         self.supports_rotational: List[Node] = []
         self.internal_hinges: List[Node] = []
-        # node ids passed to add_internal_hinge(), and the releases that check_internal_hinges()
-        # added per node as (element id, element end, original spring)
+        # node ids passed to add_internal_hinge()
         self._explicit_internal_hinges: Set[int] = set()
-        self._hinge_releases: Dict[
-            int, List[Tuple[int, Literal[1, 2], Optional[float]]]
-        ] = {}
         self.supports_roll: List[Node] = []
         self.supports_spring_x: List[Tuple[Node, bool]] = []
         self.supports_spring_y: List[Tuple[Node, bool]] = []
@@ -394,8 +390,8 @@ class SystemElements:
 
         if mp is None:
             mp = {}
-        # Copy, as hinge releases are added to the springs and a dict may be shared by elements
-        spring = {} if spring is None else dict(spring)
+        if spring is None:
+            spring = {}
 
         element_type = kwargs.get("element_type", "general")
 
@@ -499,6 +495,8 @@ class SystemElements:
             # Check if node is now orphaned, and remove it and its loads if so
             if len(self.node_map[node_id].elements) == 0:
                 system_components.util.remove_node_id(self, node_id)
+            else:
+                system_components.util.check_internal_hinges(self, node_id)
 
         # Remove element_id
         self.element_map.pop(element_id)
@@ -897,6 +895,7 @@ class SystemElements:
         Raises:
             FEMException: The eigenvalues of the stiffness matrix are non zero, which indicates an unstable structure.
                 Check your support conditions
+            FEMException: A moment load is applied to an internal hinge that no support restrains.
 
         Returns:
             np.ndarray: Displacements vector.
@@ -904,6 +903,7 @@ class SystemElements:
 
         for node_id in self.node_map:
             system_components.util.check_internal_hinges(self, node_id)
+        system_components.util.check_internal_hinge_moment_loads(self)
 
         if self.system_displacement_vector is None:
             system_components.assembly.process_supports(self)
@@ -1055,7 +1055,8 @@ class SystemElements:
 
     def add_internal_hinge(self, node_id: Union[int, Sequence[int]]) -> None:
         """Model a internal hinge at a given node.
-        This may alternatively be done by setting a spring restraint to zero (`{1: 0}` or `{2: 0}`).
+        This may alternatively be done by setting a spring restraint to zero (`{1: 0}` or `{2: 0}`)
+        at this node on every element connected to it.
         The effect is the same, though this function may be easier to use.
 
         Args:
@@ -2268,6 +2269,8 @@ class SystemElements:
             ss.add_support_rotational((node.id - 1) * n + 1)
         for args in self.supports_spring_args:
             ss.add_support_spring((args[0] - 1) * n + 1, *args[1:])
+        for node_id in self._explicit_internal_hinges:
+            ss.add_internal_hinge((node_id - 1) * n + 1)
 
         # loads
         for node_id, forces in self.loads_point.items():
