@@ -128,6 +128,8 @@ class SystemElements:
         self.supports_hinged: List[Node] = []
         self.supports_rotational: List[Node] = []
         self.internal_hinges: List[Node] = []
+        # node ids passed to add_internal_hinge()
+        self._explicit_internal_hinges: Set[int] = set()
         self.supports_roll: List[Node] = []
         self.supports_spring_x: List[Tuple[Node, bool]] = []
         self.supports_spring_y: List[Tuple[Node, bool]] = []
@@ -493,6 +495,8 @@ class SystemElements:
             # Check if node is now orphaned, and remove it and its loads if so
             if len(self.node_map[node_id].elements) == 0:
                 system_components.util.remove_node_id(self, node_id)
+            else:
+                system_components.util.check_internal_hinges(self, node_id)
 
         # Remove element_id
         self.element_map.pop(element_id)
@@ -891,6 +895,7 @@ class SystemElements:
         Raises:
             FEMException: The eigenvalues of the stiffness matrix are non zero, which indicates an unstable structure.
                 Check your support conditions
+            FEMException: A moment load is applied to an internal hinge that no support restrains.
 
         Returns:
             np.ndarray: Displacements vector.
@@ -898,6 +903,7 @@ class SystemElements:
 
         for node_id in self.node_map:
             system_components.util.check_internal_hinges(self, node_id)
+        system_components.util.check_internal_hinge_moment_loads(self)
 
         if self.system_displacement_vector is None:
             system_components.assembly.process_supports(self)
@@ -1049,7 +1055,8 @@ class SystemElements:
 
     def add_internal_hinge(self, node_id: Union[int, Sequence[int]]) -> None:
         """Model a internal hinge at a given node.
-        This may alternatively be done by setting a spring restraint to zero (`{1: 0}` or `{2: 0}`).
+        This may alternatively be done by setting a spring restraint to zero (`{1: 0}` or `{2: 0}`)
+        at this node on every element connected to it.
         The effect is the same, though this function may be easier to use.
 
         Args:
@@ -1062,7 +1069,9 @@ class SystemElements:
             id_ = _negative_index_to_id(id_, self.node_map.keys())
 
             # add the support to the support list for the plotter
-            self.internal_hinges.append(self.node_map[id_])
+            if not any(node.id == id_ for node in self.internal_hinges):
+                self.internal_hinges.append(self.node_map[id_])
+            self._explicit_internal_hinges.add(id_)
 
     def add_support_roll(
         self,
@@ -2260,6 +2269,8 @@ class SystemElements:
             ss.add_support_rotational((node.id - 1) * n + 1)
         for args in self.supports_spring_args:
             ss.add_support_spring((args[0] - 1) * n + 1, *args[1:])
+        for node_id in self._explicit_internal_hinges:
+            ss.add_internal_hinge((node_id - 1) * n + 1)
 
         # loads
         for node_id, forces in self.loads_point.items():

@@ -2,6 +2,7 @@ import numpy as np
 from pytest import approx, raises
 
 from anastruct import LoadCase, LoadCombination, SystemElements
+from anastruct.basic import FEMException
 
 from .fixtures.e2e_fixtures import *
 from .utils import pspec_context
@@ -109,7 +110,7 @@ def describe_end_to_end_tests():
         def it_results_in_correct_solution():
             sol = np.fromstring(
                 """0.00000000e+00  0.00000000e+00  1.46957616e-25  2.00000000e-09
-            -7.34788079e-25  0.00000000e+00  0.00000000e+00  0.00000000e+00
+            -7.34788079e-25  -2.08333293e-03  0.00000000e+00  0.00000000e+00
             4.16666667e-03""",
                 float,
                 sep=" ",
@@ -576,6 +577,128 @@ def describe_end_to_end_tests():
             assert system.get_element_results(1)["Mmax"] == approx(
                 system.get_element_results(2)["Mmax"]
             )
+
+    def context_internal_hinge_independent_of_element_order():
+        # Test bug fix for a joint with only one of three elements released being treated as
+        # an internal hinge, depending on the order in which the elements are added (#464)
+
+        elements = {
+            "left": ([[0, 4], [4, 4]], None),
+            "right": ([[4, 4], [8, 4]], {1: 0}),
+            "column": ([[4, 4], [4, 0]], None),
+        }
+
+        def _build(order):
+            system = SystemElements()
+            ids = {
+                name: system.add_element(elements[name][0], spring=elements[name][1])
+                for name in order
+            }
+            for location in ([0, 4], [8, 4], [4, 0]):
+                system.add_support_fixed(system.find_node_id(location))
+            system.q_load(q=-10, element_id=[ids["left"], ids["right"]])
+            system.solve()
+            return system, ids
+
+        systems = [
+            _build(order)
+            for order in (
+                ["left", "column", "right"],
+                ["left", "right", "column"],
+                ["right", "left", "column"],
+            )
+        ]
+
+        def it_does_not_create_an_internal_hinge():
+            for system, ids in systems:
+                assert system.internal_hinges == []
+                assert system.element_map[ids["left"]].springs == {}
+                assert system.element_map[ids["column"]].springs == {}
+
+        def it_does_not_create_an_internal_hinge_when_splitting_an_element_first():
+            system = SystemElements()
+            left = system.add_element(elements["left"][0])
+            system.add_element(elements["right"][0], spring=elements["right"][1])
+            system.insert_node(left, location=[2, 4])
+            column = system.add_element(elements["column"][0])
+            assert system.internal_hinges == []
+            assert system.element_map[column].springs == {}
+
+        def it_results_in_the_same_moments_for_any_element_order():
+            moments = []
+            for system, ids in systems:
+                node_id = system.find_node_id([4, 4])
+                m_left = system.element_map[ids["left"]].node_map[node_id].Tz
+                m_column = system.element_map[ids["column"]].node_map[node_id].Tz
+                assert m_left == approx(-m_column)
+                moments.append(m_left)
+            assert moments[0] != approx(0)
+            assert moments == approx([moments[0]] * len(moments))
+
+    def context_moment_load_on_a_joint_with_one_rigid_element():
+        # Test that a joint where all but one element is released isn't an internal hinge,
+        # so a moment load on it is carried by the rigid element
+
+        system = SystemElements()
+        system.add_element([[0, 0], [5, 0]])
+        system.add_element([[5, 0], [10, 0]], spring={1: 0})
+        system.add_support_fixed(1)
+        system.add_support_roll(3, direction="x")
+        system.moment_load(2, Tz=10)
+        system.solve()
+
+        def it_does_not_create_an_internal_hinge():
+            assert system.internal_hinges == []
+            assert system.element_map[1].springs == {}
+
+        def it_carries_the_moment_load_to_the_support():
+            assert system.get_node_results_system(1)["Tz"] == approx(10)
+
+    def context_moment_load_on_an_internal_hinge():
+        # Test that a moment load on a node where every element is released raises, instead of
+        # being lost in the restraint of the node's rotation
+
+        system = SystemElements()
+        system.add_element([[0, 0], [5, 0]], spring={2: 0})
+        system.add_element([[5, 0], [10, 0]], spring={1: 0})
+        system.add_support_fixed([1, 3])
+        system.moment_load(2, Tz=10)
+
+        def it_raises_a_stability_error():
+            with raises(FEMException, match="StabilityError"):
+                system.solve()
+
+    def context_add_internal_hinge():
+        # Test that add_internal_hinge() releases every element at the node without
+        # modifying their springs, also when the system is discretized
+
+        def _build(discretize):
+            system = SystemElements()
+            system.add_element([[0, 0], [5, 0]])
+            system.add_element([[5, 0], [10, 0]])
+            system.add_support_fixed([1, 3])
+            system.add_internal_hinge(2)
+            system.point_load(2, Fy=-10)
+            if discretize:
+                system.discretize(4)
+            system.solve()
+            return system
+
+        system = _build(discretize=False)
+        discretized = _build(discretize=True)
+
+        def it_does_not_modify_the_springs():
+            for s in (system, discretized):
+                assert all(el.springs == {} for el in s.element_map.values())
+
+        def it_keeps_the_internal_hinge_when_discretized():
+            assert [node.id for node in system.internal_hinges] == [2]
+            assert [node.id for node in discretized.internal_hinges] == [5]
+
+        def it_results_in_hinged_moments():
+            # two cantilevers that each carry half of the point load
+            assert system.get_node_results_system(1)["Tz"] == approx(-25)
+            assert discretized.get_node_results_system(1)["Tz"] == approx(-25)
 
     def context_q_and_q_perp_loads():
         # Test addition of simultaneous q and q_perp loads

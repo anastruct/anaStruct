@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 def check_internal_hinges(system: "SystemElements", node_id: int) -> None:
     """Identify internal hinges, set their hinge status
 
+    A node is an internal hinge if it was passed to `add_internal_hinge()`, or if every
+    element connected to it is released (k=0) at that node. Nothing then restrains the
+    rotation of the node, so it is restrained instead (see `process_supports()`), which
+    keeps the stiffness matrix non-singular without changing any element forces.
+
+    The springs of the elements are not modified, so the result only depends on the
+    elements currently connected to the node, not on the order in which they were added.
+
     Args:
         system (SystemElements): System in which the node is located
         node_id (int): Id of the node in the system
@@ -21,39 +29,51 @@ def check_internal_hinges(system: "SystemElements", node_id: int) -> None:
 
     node = system.node_map[node_id]
 
-    hinges = []
+    released = []
     for el_id in node.elements:
         el = system.element_map[el_id]
         assert el.springs is not None
-        if node_id == el.node_id1 and 1 in el.springs and el.springs[1] == 0:
-            hinges.append(1)
-        elif node_id == el.node_id2 and 2 in el.springs and el.springs[2] == 0:
-            hinges.append(1)
-        else:
-            hinges.append(0)
+        end: Literal[1, 2] = 1 if node_id == el.node_id1 else 2
+        released.append(el.springs.get(end) == 0)
 
-    # If at least one element is connected
-    # and no more than one element is rigidly connected
-    if (1 < len(hinges) <= 1 + sum(hinges)) or (len(hinges) == 1 and sum(hinges) == 1):
+    is_hinge = node_id in system._explicit_internal_hinges or (
+        len(released) > 0 and all(released)
+    )
+
+    # Match by id, as the post-processing replaces the node objects
+    system.internal_hinges[:] = [n for n in system.internal_hinges if n.id != node_id]
+    node.hinge = is_hinge
+    if is_hinge:
         system.internal_hinges.append(node)
 
-    if node in system.internal_hinges:
-        node.hinge = True
 
-        # If the elements aren't already all hinged, then set them to be
-        if len(hinges) - sum(hinges) >= 1:
-            for el_id in node.elements:
-                el = system.element_map[el_id]
-                assert el.springs is not None
-                if node_id == el.node_id1 and not (
-                    1 in el.springs and el.springs[1] == 0
-                ):
-                    el.springs.update({1: 0})
-                if node_id == el.node_id2 and not (
-                    2 in el.springs and el.springs[2] == 0
-                ):
-                    el.springs.update({2: 0})
-                system.element_map[el_id].springs = el.springs
+def check_internal_hinge_moment_loads(system: "SystemElements") -> None:
+    """Check that no moment load is applied to an unsupported internal hinge
+
+    The rotation of an internal hinge is only restrained to keep the stiffness matrix
+    non-singular. No element resists a moment load on it, so unless a support restrains
+    the rotation, the load would otherwise be silently lost in that restraint.
+
+    Args:
+        system (SystemElements): System to check
+
+    Raises:
+        FEMException: Raised when a moment load is applied to an unsupported internal hinge
+    """
+    supported = {n.id for n in system.supports_fixed + system.supports_rotational}
+    supported |= {n.id for n, _ in system.supports_spring_z}
+    supported |= {
+        n.id
+        for n, rotate in zip(system.supports_roll, system.supports_roll_rotate)
+        if not rotate
+    }
+    for node in system.internal_hinges:
+        if system.loads_moment.get(node.id, 0) != 0 and node.id not in supported:
+            raise FEMException(
+                "StabilityError",
+                f"A moment load is applied to node {node.id}, but every element is hinged "
+                "at this node, so nothing resists it.",
+            )
 
 
 def append_node_id(
@@ -105,8 +125,8 @@ def remove_node_id(
         system.supports_hinged.remove(node)
     if node in system.supports_rotational:
         system.supports_rotational.remove(node)
-    if node in system.internal_hinges:
-        system.internal_hinges.remove(node)
+    system.internal_hinges[:] = [n for n in system.internal_hinges if n.id != node_id]
+    system._explicit_internal_hinges.discard(node_id)
     if node in system.supports_roll:
         ind = system.supports_roll.index(node)
         system.supports_roll.remove(node)
