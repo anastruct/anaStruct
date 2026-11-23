@@ -114,10 +114,25 @@ def det_linear_buckling(system: "SystemElements") -> float:
 
     # (k0 + λ kg) x = 0  ⇔  k0⁻¹ kg x = μ x  with  λ = −1/μ. kg is singular
     # (no axial terms), so it is not inverted. No μ < 0 means no compression.
-    mu = np.linalg.eigvals(np.linalg.solve(k0, kg)).real
+    mu = _generalised_eigenvalues(k0, kg)
     if mu.min() > -1e-12:
         return float("inf")
     return float(-1 / mu.min())
+
+
+def _generalised_eigenvalues(k0: np.ndarray, kg: np.ndarray) -> np.ndarray:
+    """Real eigenvalues μ of k0⁻¹ kg. When k0 is symmetric positive definite
+    (k0 = L Lᵀ) and kg symmetric, they are the eigenvalues of the symmetric
+    L⁻¹ kg L⁻ᵀ, found with the much faster symmetric solver."""
+    if np.allclose(kg, kg.T):
+        try:
+            lower = np.linalg.cholesky(k0)
+        except np.linalg.LinAlgError:
+            pass
+        else:
+            half = np.linalg.solve(lower, kg)  # L⁻¹ kg
+            return np.linalg.eigvalsh(np.linalg.solve(lower, half.T))
+    return np.linalg.eigvals(np.linalg.solve(k0, kg)).real
 
 
 def geometrically_non_linear(

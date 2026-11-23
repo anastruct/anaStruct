@@ -1014,8 +1014,17 @@ class SystemElements:
         system_components.assembly.process_conditions(ss)
 
         assert ss.reduced_system_matrix is not None
-        w, _ = np.linalg.eig(ss.reduced_system_matrix)
-        return bool(np.all(w > min_eigen))
+        k = ss.reduced_system_matrix
+        if not np.allclose(k, k.T):
+            return bool(np.all(np.linalg.eigvals(k) > min_eigen))
+        # A stiffness matrix is symmetric. All eigenvalues of a symmetric matrix exceed
+        # min_eigen exactly when k - min_eigen * I is positive definite, which a Cholesky
+        # factorisation finds much faster than the eigenvalues.
+        try:
+            np.linalg.cholesky(k - min_eigen * np.eye(len(k)))
+        except np.linalg.LinAlgError:
+            return False
+        return True
 
     def add_support_hinged(self, node_id: Union[int, Sequence[int]]) -> None:
         """Model a hinged support at a given node.
